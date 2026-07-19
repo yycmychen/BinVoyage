@@ -108,7 +108,17 @@
         .ds-provider { display: inline-block; background: #eef2ff; color: #4338ca; font-size: 0.62rem; padding: 1px 6px; border-radius: 999px; font-weight: bold; margin-top: 3px; }
 
         .bottom-nav { background-color: white; border-top: 1px solid #e2e8f0; display: flex; justify-content: space-around; padding: 10px 8px 18px 8px; z-index: 50; }
-        .nav-btn { background: none; border: none; color: #94a3b8; display: flex; flex-direction: column; align-items: center; gap: 2px; width: 20%; cursor: pointer; }
+        .nav-btn { background: none; border: none; color: #94a3b8; display: flex; flex-direction: column; align-items: center; gap: 2px; flex: 1; cursor: pointer; }
+
+        /* 社交模組 */
+        .pill-row { display: flex; gap: 8px; margin-bottom: 12px; }
+        .pill { flex: 1; text-align: center; padding: 8px; border-radius: 999px; font-size: 0.78rem; font-weight: bold; cursor: pointer; background: white; border: 1px solid #e2e8f0; color: #64748b; }
+        .pill.active { background: #059669; color: white; border-color: #059669; }
+        .post-photo { width: 100%; border-radius: 10px; margin-top: 8px; }
+        .post-meta { font-size: 0.65rem; color: #94a3b8; margin-top: 6px; }
+        .social-textarea { width: 100%; border: 1px solid #cbd5e1; border-radius: 10px; padding: 10px; font-size: 0.8rem; resize: none; outline: none; font-family: inherit; }
+        .shop-marker { color: #b45309; font-size: 1.4rem; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3)); text-align: center; }
+        .shop-marker-label { background-color: #fffbeb; color: #92400e; font-size: 8px; padding: 2px 5px; border-radius: 4px; margin-top: -4px; white-space: nowrap; font-weight: bold; border: 1px solid #fcd34d; }
 
         /* 行程規劃 checklist 與提示 */
         .chk-item { display: flex; align-items: center; gap: 10px; padding: 9px 12px; background: white; border: 1px solid #e2e8f0; border-radius: 10px; margin-bottom: 6px; font-size: 0.8rem; color: #334155; }
@@ -176,7 +186,7 @@
 
                 <div class="ai-alert-card" id="ai-card">
                     <div class="ai-alert-title">
-                        <span><i class="fa-solid fa-robot"></i> 行前垃圾壓力預測</span><span class="ai-tag tag-live" id="ai-tag">即時開放數據</span>
+                        <span><i class="fa-solid fa-robot"></i> 營地繁忙預測</span><span class="ai-tag tag-live" id="ai-tag">即時開放數據</span>
                     </div>
                     <div class="ai-alert-desc" id="ai-card-text">正在載入天文台九天預報⋯⋯</div>
                 </div>
@@ -258,6 +268,47 @@
                 </div>
             </div>
 
+            <!-- 模組 2b: 社交（論壇 + 私密日記） -->
+            <div id="tab-social" class="tab-content page-container">
+                <div class="section-title"><i class="fa-solid fa-comments"></i> 山友社區</div>
+                <div class="pill-row">
+                    <div class="pill active" id="pill-forum" onclick="switchSocial('forum')">山友論壇</div>
+                    <div class="pill" id="pill-diary" onclick="switchSocial('diary')">我的日記 <i class="fa-solid fa-lock" style="font-size:0.6rem;"></i></div>
+                </div>
+
+                <div id="social-forum">
+                    <div class="card">
+                        <textarea class="social-textarea" id="forum-text" rows="2" placeholder="分享今日的山野見聞、無痕露營心得⋯⋯"></textarea>
+                        <div style="display:flex; gap:8px; margin-top:8px; align-items:center;">
+                            <label for="forum-photo" style="font-size:0.72rem; color:#059669; font-weight:bold; cursor:pointer;"><i class="fa-solid fa-image"></i> 加相片</label>
+                            <input type="file" id="forum-photo" accept="image/*" style="display:none;" onchange="previewSocialPhoto(this,'forum-preview')">
+                            <span style="flex:1;"></span>
+                            <button class="btn-claim" style="padding:6px 14px;" onclick="postForum()">發帖</button>
+                        </div>
+                        <img id="forum-preview" class="post-photo" style="display:none;" alt="預覽">
+                        <div style="font-size:0.62rem; color:#94a3b8; margin-top:6px;"><i class="fa-solid fa-user-shield"></i> 論壇採用信用值制度:信用值歸零將暫停發帖權限,違規內容經舉報核實後扣分。</div>
+                    </div>
+                    <div id="forum-list"></div>
+                </div>
+
+                <div id="social-diary" style="display:none;">
+                    <div class="card" style="background:#f0fdf4; border-color:#bbf7d0;">
+                        <div style="font-size:0.68rem; color:#166534;"><i class="fa-solid fa-lock"></i> <b>私密空間:</b>日記只儲存在你自己的手機（本機儲存）,不會上傳到任何伺服器,連我們也看不到。</div>
+                    </div>
+                    <div class="card">
+                        <textarea class="social-textarea" id="diary-text" rows="3" placeholder="今日的山野隨筆⋯⋯（系統會自動記下日期、營地和天氣）"></textarea>
+                        <div style="display:flex; gap:8px; margin-top:8px; align-items:center;">
+                            <label for="diary-photo" style="font-size:0.72rem; color:#059669; font-weight:bold; cursor:pointer;"><i class="fa-solid fa-image"></i> 加相片</label>
+                            <input type="file" id="diary-photo" accept="image/*" style="display:none;" onchange="previewSocialPhoto(this,'diary-preview')">
+                            <span style="flex:1;"></span>
+                            <button class="btn-claim" style="padding:6px 14px;" onclick="addDiary()">寫入日記</button>
+                        </div>
+                        <img id="diary-preview" class="post-photo" style="display:none;" alt="預覽">
+                    </div>
+                    <div id="diary-list"></div>
+                </div>
+            </div>
+
             <!-- 模組 3: 任務與積分（模擬） -->
             <div id="tab-rewards" class="tab-content page-container">
                 <div class="credit-card">
@@ -308,15 +359,16 @@
                         <div><div class="ds-name">公眾假期數據 API</div>
                         <div class="ds-meta" id="ds-hol-meta">1823.gov.hk/common/ical/tc.json</div><span class="ds-provider">效率促進組 1823</span></div>
                     </div>
+                    <div class="ds-item" id="ds-kmb">
+                        <div class="ds-dot dot-wait"></div>
+                        <div><div class="ds-name">九巴實時到站數據 API</div>
+                        <div class="ds-meta" id="ds-kmb-meta">data.etabus.gov.hk・巴士站位置及實時 ETA（規劃回收路徑時載入）</div><span class="ds-provider">九龍巴士（開放數據）</span></div>
+                    </div>
                     <div class="ds-item" id="ds-wild" style="border-bottom:none;">
                         <div class="ds-dot dot-ok"></div>
                         <div><div class="ds-name">野生動物出沒熱點</div>
                         <div class="ds-meta">現階段整理自漁護署野豬滋擾紀錄及立法會文件（按郊野公園）；正式版由市民眾包目擊回報（GPS + 照片）實時更新，並以開放格式回饋漁護署</div><span class="ds-provider">漁護署資料 + 眾包</span></div>
                     </div>
-                </div>
-                <div class="card" style="background:#fffbeb; border-color:#fde68a;">
-                    <div style="font-size:0.75rem; color:#92400e; line-height:1.6;"><i class="fa-solid fa-calculator"></i> <b>垃圾壓力指數公式（透明可解釋）：</b><br>
-                    指數 = 假期/週末(+40) + 降雨概率（低+30／中+10／高+0）+ 舒適氣溫 18–30°C(+20) + 大型營地(+10)。<br>≥70 高壓力｜40–69 中等｜&lt;40 低。數據源：天文台預報 + 1823 假期 + 漁護署營地容量。</div>
                 </div>
             </div>
 
@@ -326,6 +378,7 @@
             <button class="nav-btn active" id="nav-map-btn" onclick="switchTab('map', this)"><i class="fa-solid fa-map-location-dot"></i><span>導航</span></button>
             <button class="nav-btn" id="nav-plan-btn" onclick="switchTab('plan', this)"><i class="fa-solid fa-clipboard-list"></i><span>行程</span></button>
             <button class="nav-btn" id="nav-report-btn" onclick="switchTab('report', this)"><i class="fa-solid fa-camera"></i><span>舉報</span></button>
+            <button class="nav-btn" id="nav-social-btn" onclick="switchTab('social', this)"><i class="fa-solid fa-comments"></i><span>社交</span></button>
             <button class="nav-btn" id="nav-rewards-btn" onclick="switchTab('rewards', this)"><i class="fa-solid fa-gift"></i><span>任務</span></button>
             <button class="nav-btn" id="nav-data-btn" onclick="switchTab('data', this)"><i class="fa-solid fa-database"></i><span>數據</span></button>
         </div>
@@ -339,6 +392,7 @@
                 </div>
                 <div style="font-size:0.75rem; font-weight:bold; color:#475569; margin-bottom:6px;"><i class="fa-solid fa-recycle" style="color:#059669;"></i> 距離最近的真實回收點（環保署開放數據・直線距離計算）：</div>
                 <div id="rp-options"></div>
+                <div id="transport-info" style="display:none;"></div>
                 <div class="qr-section" id="qr-scan-section" style="display:none;">
                     <div class="qr-placeholder" id="qr-placeholder"><i class="fa-solid fa-qrcode"></i></div>
                     <div id="qr-reader" style="width:100%; display:none;"></div>
@@ -755,7 +809,7 @@
         const t = f.forecastMaxtemp.value;
         const w = getWildlife();
         el.innerHTML = `<b>${f.forecastDate.slice(4,6)}月${f.forecastDate.slice(6,8)}日（${f.week}）・${selectedCamp.tc}</b><br>` +
-            `預測垃圾壓力：<span class="pressure-badge ${lvl[1]}">${lvl[0]}（${score}/100）</span><br>` +
+            `預測繁忙程度：<span class="pressure-badge ${lvl[1]}">${lvl[0]}（${score}/100）</span><br>` +
             `${f.forecastWeather}（${f.forecastMintemp.value}–${t}°C）<br>` +
             `<i class="fa-solid fa-paw" style="color:#dc2626"></i> 預測出沒物種：<b>${w.animal}</b>——${w.tip}<br>` +
             `<span style="color:#64748b">評分因素：${reasons.join("、")}。` +
@@ -867,7 +921,7 @@
         if (t >= 33 && timeSlot === "am") tips.push("記得每 30 分鐘補水一次,發現同行者頭暈作嘔要即時休息求助");
         if (rainy) tips.push("有驟雨或雷暴預測,避免行溪澗路線,雷暴時遠離山頂及大樹");
         if (isHoliday) tips.push("當日是公眾假期,郊野人流高峰,垃圾請務必帶落山,下山回收點見地圖");
-        if (score >= 70) tips.push("此日垃圾壓力預測為「高」——完成順路回收可獲雙倍積分!");
+        if (score >= 70) tips.push("此日營地預測「高度繁忙」——垃圾桶較易滿,請自備垃圾袋;完成順路回收可獲雙倍積分!");
 
         // ---- 即時天氣警告（天文台 warnsum API） ----
         let warnHtml = "";
@@ -880,12 +934,112 @@
             <div class="card">
                 <div style="font-size:0.8rem; font-weight:bold; color:#1e293b; margin-bottom:6px;"><i class="fa-solid fa-cloud-sun" style="color:#eab308"></i> ${f.forecastDate.slice(4,6)}月${f.forecastDate.slice(6,8)}日（${f.week}）${isHoliday ? '<span class="ai-tag tag-sim" style="background:#fee2e2;">公眾假期</span>' : isWeekend ? '<span class="ai-tag tag-sim" style="background:#fef3c7; color:#b45309;">週末</span>' : ""}</div>
                 <div style="font-size:0.75rem; color:#475569; line-height:1.5;">${f.forecastWeather}<br>${f.forecastMintemp.value}–${t}°C・相對濕度 ${f.forecastMinrh.value}–${f.forecastMaxrh.value}%・降雨概率:${f.PSR || "—"}</div>
-                <div style="font-size:0.75rem; margin-top:6px;">垃圾壓力預測:<span class="pressure-badge ${lvl[1]}">${lvl[0]}（${score}/100）</span> <span style="color:#94a3b8; font-size:0.65rem;">${reasons.join("、")}</span></div>
+                <div style="font-size:0.75rem; margin-top:6px;">營地繁忙指數:<span class="pressure-badge ${lvl[1]}">${lvl[0]}（${score}/100）</span> <span style="color:#94a3b8; font-size:0.65rem;">${reasons.join("、")}</span></div>
             </div>
             ${tips.length ? `<div class="tip-banner"><i class="fa-solid fa-lightbulb"></i> <b>貼心建議:</b><br>${tips.map(x => "・" + x).join("<br>")}</div>` : ""}
             <div style="font-size:0.78rem; font-weight:bold; color:#475569; margin-bottom:6px;"><i class="fa-solid fa-list-check" style="color:#059669"></i> 智能裝備清單（按天氣・營地・季節自動生成）:</div>
             ${items.map((x, i) => `<label class="chk-item"><input type="checkbox"><span><b>${x[0]}</b><span class="chk-why">${x[1]}</span></span></label>`).join("")}
             <div style="font-size:0.62rem; color:#94a3b8; margin-top:8px;">數據來源:天文台九天預報＋天氣警告 API・1823 公眾假期・漁護署營地資料（水源／營位）</div>`;
+    }
+
+    // ============ 合作商戶休息點（概念演示・帶動山村經濟） ============
+    // 示範數據:正式版將與真實商戶合作,由商戶自行登記位置及優惠
+    const SHOP_PARTNERS = [
+        { name: "荃錦坳茶水站", type: "茶座", lat: 22.4058, lng: 114.1032, offer: "100 綠色積分換熱飲一杯" },
+        { name: "北潭涌士多", type: "士多", lat: 22.4021, lng: 114.3205, offer: "150 積分換雪糕,順手交低垃圾袋" },
+        { name: "鶴藪村士多", type: "士多", lat: 22.5005, lng: 114.1755, offer: "憑當日回收記錄 9 折" },
+        { name: "貝澳海邊小店", type: "士多", lat: 22.2410, lng: 113.9788, offer: "100 積分換樽裝水" },
+        { name: "梅窩裝備店", type: "裝備店", lat: 22.2650, lng: 114.0022, offer: "300 積分換營具租借 8 折" },
+        { name: "菠蘿壩小食亭", type: "小食亭", lat: 22.3922, lng: 114.1482, offer: "120 積分換小食一份" }
+    ];
+    function drawShops() {
+        SHOP_PARTNERS.forEach(s => {
+            const icon = L.divIcon({ className: 'custom-leaflet-icon',
+                html: `<div class="shop-marker"><i class="fa-solid fa-store"></i></div><div class="shop-marker-label">${s.name}</div>`,
+                iconSize: [80, 40], iconAnchor: [40, 34] });
+            L.marker([s.lat, s.lng], { icon }).addTo(map)
+             .bindPopup(`<b>${s.name}</b>（${s.type}・休息點）<br>🎁 積分優惠:${s.offer}<br><span style="font-size:10px;color:#64748b">合作商戶概念演示——以綠色積分連結山村經濟,行山消費雙贏</span>`);
+        });
+    }
+
+    // ============ 社交模組:山友論壇（雲端+信用值）與私密日記（純本機） ============
+    let pendingPhotos = {};
+    function switchSocial(which) {
+        document.getElementById('social-forum').style.display = which === 'forum' ? 'block' : 'none';
+        document.getElementById('social-diary').style.display = which === 'diary' ? 'block' : 'none';
+        document.getElementById('pill-forum').classList.toggle('active', which === 'forum');
+        document.getElementById('pill-diary').classList.toggle('active', which === 'diary');
+    }
+    // 相片縮圖至 480px 再儲存,避免迫爆手機本機儲存空間
+    function previewSocialPhoto(input, imgId) {
+        const file = input.files[0];
+        if (!file) return;
+        const img = new Image();
+        img.onload = () => {
+            const c = document.createElement('canvas');
+            const scale = Math.min(1, 480 / img.width);
+            c.width = img.width * scale; c.height = img.height * scale;
+            c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+            const dataUrl = c.toDataURL('image/jpeg', 0.7);
+            pendingPhotos[imgId] = dataUrl;
+            const el = document.getElementById(imgId);
+            el.src = dataUrl; el.style.display = 'block';
+        };
+        img.src = URL.createObjectURL(file);
+    }
+    function socialTimestamp() {
+        const wx = forecastData?.weatherForecast?.[0];
+        return `${new Date().toLocaleDateString('zh-HK')}・${selectedCamp.tc}` + (document.getElementById('hdr-temp').innerText !== "--" ? `・${document.getElementById('hdr-temp').innerText}°C` : "");
+    }
+    async function postForum() {
+        if (userCredit <= 0) { showCustomAlert("⛔ 你的信用值已歸零,論壇發帖權限暫停。\n\n信用值制度同時保障舉報同論壇的內容質素。"); return; }
+        const text = document.getElementById('forum-text').value.trim();
+        if (!text) { showCustomAlert("請先寫低想分享的內容。"); return; }
+        const post = { text, photo: pendingPhotos['forum-preview'] || null, meta: socialTimestamp(), time: new Date().toISOString() };
+        const posts = JSON.parse(localStorage.getItem('forum') || "[]");
+        posts.unshift(post);
+        localStorage.setItem('forum', JSON.stringify(posts.slice(0, 30)));
+        if (CONFIG.BACKEND_URL) {
+            try { await fetch(CONFIG.BACKEND_URL, { method: "POST", mode: "no-cors", body: JSON.stringify({ type: "論壇分享", lat: selectedCamp.lat, lng: selectedCamp.lng, note: text, time: post.time }) }); } catch (e) {}
+        }
+        document.getElementById('forum-text').value = "";
+        document.getElementById('forum-preview').style.display = 'none';
+        delete pendingPhotos['forum-preview'];
+        renderForum();
+        showCustomAlert("✅ 已發帖!\n\n帖子已同步至雲端（相片僅存於本機,正式版將上傳雲端儲存）。");
+    }
+    function renderForum() {
+        const local = JSON.parse(localStorage.getItem('forum') || "[]");
+        const remote = allReportsCache.filter(r => (r.type || "").includes("論壇") && !local.some(l => l.time === r.time))
+            .map(r => ({ text: r.note, photo: null, meta: "山友分享（雲端）", time: r.time }));
+        let all = local.concat(remote).sort((a, b) => new Date(b.time) - new Date(a.time));
+        if (!all.length) all = [
+            { text: "【示範帖子】今日鶴藪營地好乾淨,大家記得垃圾帶落山!", photo: null, meta: "山友・示範數據", time: "" },
+            { text: "【示範帖子】西灣營地日出一流,已順路喺回收點交低兩袋膠樽 ♻️", photo: null, meta: "山友・示範數據", time: "" }
+        ];
+        document.getElementById('forum-list').innerHTML = all.slice(0, 20).map(p =>
+            `<div class="card"><div style="font-size:0.8rem; color:#1e293b; line-height:1.5;">${p.text}</div>` +
+            (p.photo ? `<img class="post-photo" src="${p.photo}">` : "") +
+            `<div class="post-meta"><i class="fa-solid fa-user-circle"></i> ${p.meta}</div></div>`).join("");
+    }
+    function addDiary() {
+        const text = document.getElementById('diary-text').value.trim();
+        if (!text) { showCustomAlert("請先寫低今日的隨筆。"); return; }
+        const entries = JSON.parse(localStorage.getItem('diary') || "[]");
+        entries.unshift({ text, photo: pendingPhotos['diary-preview'] || null, meta: socialTimestamp(), time: new Date().toISOString() });
+        localStorage.setItem('diary', JSON.stringify(entries.slice(0, 30)));
+        document.getElementById('diary-text').value = "";
+        document.getElementById('diary-preview').style.display = 'none';
+        delete pendingPhotos['diary-preview'];
+        renderDiary();
+    }
+    function renderDiary() {
+        const entries = JSON.parse(localStorage.getItem('diary') || "[]");
+        document.getElementById('diary-list').innerHTML = entries.length ? entries.map(p =>
+            `<div class="card"><div style="font-size:0.8rem; color:#1e293b; line-height:1.5;">${p.text}</div>` +
+            (p.photo ? `<img class="post-photo" src="${p.photo}">` : "") +
+            `<div class="post-meta"><i class="fa-solid fa-lock"></i> ${p.meta}</div></div>`).join("")
+            : `<div class="card" style="font-size:0.75rem; color:#94a3b8;">仲未有日記,寫低你嘅第一篇山野隨筆啦!</div>`;
     }
 
     // ============ 舉報信用值（防濫用機制） ============
@@ -930,12 +1084,72 @@
         document.getElementById('qr-scan-section').style.display = 'none';
         document.getElementById('routing-modal').classList.add('show');
     }
-    function closeRoutingModal() { document.getElementById('routing-modal').classList.remove('show'); }
+    function closeRoutingModal() {
+        document.getElementById('routing-modal').classList.remove('show');
+        document.getElementById('transport-info').style.display = 'none';
+    }
     function startNavigation(p) {
         isNavigating = true;
         L.polyline([[selectedCamp.lat, selectedCamp.lng], [p.lat, p.lng]], { color: '#059669', weight: 3, dashArray: '6 8' }).addTo(map);
         map.fitBounds([[selectedCamp.lat, selectedCamp.lng], [p.lat, p.lng]], { padding: [40, 40] });
         document.getElementById('qr-scan-section').style.display = 'flex';
+        showTransport(p);
+    }
+
+    // ============ 智能交通導航（九巴開放數據 + 地圖導航深連結） ============
+    let kmbStops = null;
+    async function loadKmbStops() {
+        if (kmbStops) return kmbStops;
+        const res = await fetch("https://data.etabus.gov.hk/v1/transport/kmb/stop");
+        const data = await res.json();
+        kmbStops = (data.data || []).map(s => ({ id: s.stop, name: s.name_tc, lat: +s.lat, lng: +s.long }));
+        return kmbStops;
+    }
+    async function showTransport(p) {
+        const box = document.getElementById('transport-info');
+        const gmapUrl = `https://www.google.com/maps/dir/?api=1&origin=${selectedCamp.lat},${selectedCamp.lng}&destination=${p.lat},${p.lng}&travelmode=transit`;
+        box.style.display = 'block';
+        box.innerHTML = `<div class="card" style="margin-bottom:10px;">
+            <div style="font-size:0.78rem; font-weight:bold; color:#1e293b; margin-bottom:8px;"><i class="fa-solid fa-bus" style="color:#dc2626;"></i> 智能交通導航</div>
+            <div style="font-size:0.72rem; color:#64748b;">正在從九巴開放數據尋找最近巴士站⋯⋯</div></div>`;
+        let busHtml = "";
+        try {
+            const stops = await loadKmbStops();
+            let best = null, bestD = Infinity;
+            stops.forEach(s => {
+                const d = haversine(p.lat, p.lng, s.lat, s.lng);
+                if (d < bestD) { bestD = d; best = s; }
+            });
+            setDot('ds-kmb', 'ok');
+            document.getElementById('ds-kmb-meta').innerText = `data.etabus.gov.hk・已載入 ${stops.length.toLocaleString()} 個巴士站（即時）`;
+            if (best && bestD < 1.5) {
+                let etaHtml = "";
+                try {
+                    const er = await fetch(`https://data.etabus.gov.hk/v1/transport/kmb/stop-eta/${best.id}`);
+                    const ed = await er.json();
+                    const now = Date.now();
+                    const etas = (ed.data || []).filter(e => e.eta)
+                        .map(e => ({ route: e.route, min: Math.max(0, Math.round((new Date(e.eta) - now) / 60000)) }))
+                        .filter(e => e.min <= 60).slice(0, 3);
+                    if (etas.length) etaHtml = `<div style="font-size:0.72rem; color:#059669; font-weight:bold; margin-top:4px;">實時到站：${etas.map(e => `${e.route} 號線 ${e.min === 0 ? "即將到站" : e.min + " 分鐘"}`).join("・")}</div>`;
+                    else etaHtml = `<div style="font-size:0.68rem; color:#94a3b8; margin-top:4px;">此站暫無 60 分鐘內班次（郊區班次較疏，請預早計劃）</div>`;
+                } catch (e2) { etaHtml = ""; }
+                busHtml = `<div style="font-size:0.75rem; color:#334155;"><b>回收點最近巴士站：</b>${best.name}（步行約 ${Math.max(1, Math.round(bestD / 0.075))} 分鐘）</div>${etaHtml}`;
+            } else {
+                busHtml = `<div style="font-size:0.72rem; color:#94a3b8;">回收點 1.5 公里內未有九巴站，建議使用下方地圖導航查看全部交通選擇。</div>`;
+            }
+        } catch (e) {
+            setDot('ds-kmb', 'fail');
+            busHtml = `<div style="font-size:0.72rem; color:#94a3b8;">九巴數據暫時無法載入，可使用下方地圖導航。</div>`;
+        }
+        box.innerHTML = `<div class="card" style="margin-bottom:10px;">
+            <div style="font-size:0.78rem; font-weight:bold; color:#1e293b; margin-bottom:8px;"><i class="fa-solid fa-bus" style="color:#dc2626;"></i> 智能交通導航</div>
+            ${busHtml}
+            <a href="${gmapUrl}" target="_blank" rel="noopener" style="display:block; text-decoration:none; margin-top:10px;">
+                <div class="btn btn-primary" style="padding:10px; font-size:0.8rem;"><i class="fa-solid fa-diamond-turn-right"></i> 開啟公共交通導航（營地 → 回收點）</div>
+            </a>
+            <div style="font-size:0.62rem; color:#94a3b8; margin-top:8px;"><i class="fa-solid fa-shield-heart"></i> 安全提示：夜間下山請沿有街燈的馬路行走，結伴同行；導航期間請留意路面情況。</div>
+        </div>`;
     }
     function simulateQrScanSuccess() {
         closeRoutingModal();
@@ -973,7 +1187,7 @@
         btn.classList.add('active');
         if (step === 1) {
             switchTab('plan', document.getElementById('nav-plan-btn'));
-            showCustomAlert("步驟 1: 出發前\n\nAI 行程規劃:揀日子,系統即時結合天文台九天預報、天氣警告、1823 假期及漁護署營地資料,自動生成當日的垃圾壓力預測、貼心建議及裝備清單(每項都寫明原因)。");
+            showCustomAlert("步驟 1: 出發前\n\nAI 行程規劃:揀日子,系統即時結合天文台九天預報、天氣警告、1823 假期及漁護署營地資料,自動生成當日的營地繁忙預測、貼心建議及裝備清單(每項都寫明原因)。繁忙度高即人多、垃圾桶易滿——建議自備垃圾袋。");
         } else if (step === 2) {
             switchTab('map', document.getElementById('nav-map-btn'));
             const idx = AFCD_CAMPSITES.findIndex(c => c.en === "Hok Tau");
@@ -1103,8 +1317,10 @@
         }
         allReportsCache = all;
         if (lastRcpList.length) drawRecyclingPoints(lastRcpList); // 以最新回報刷新回收點滿溢狀態
+        renderForum(); // 論壇同步顯示雲端分享
         all.slice(-50).forEach(r => {
             if (!r.lat || !r.lng) return;
+            if ((r.type || "").includes("論壇")) return; // 論壇帖子不顯示於地圖
             const icon = L.divIcon({ className: 'custom-leaflet-icon',
                 html: `<div class="warning-icon" style="color:#ca8a04"><i class="fa-solid fa-flag"></i></div>`,
                 iconSize: [30, 30], iconAnchor: [15, 26] });
@@ -1158,6 +1374,9 @@
     fetchCurrentTemp();
     setInterval(fetchCurrentTemp, 10 * 60 * 1000); // 實時氣溫每 10 分鐘更新
     drawReports();
+    drawShops();
+    renderForum();
+    renderDiary();
     registerPwa();
     renderCredit();
     if (CONFIG.BACKEND_URL) document.getElementById('report-mode-tag').innerText = "雲端同步";
