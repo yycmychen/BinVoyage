@@ -1011,16 +1011,24 @@
     function renderForum() {
         const local = JSON.parse(localStorage.getItem('forum') || "[]");
         const remote = allReportsCache.filter(r => (r.type || "").includes("論壇") && !local.some(l => l.time === r.time))
-            .map(r => ({ text: r.note, photo: null, meta: "山友分享（雲端）", time: r.time }));
-        let all = local.concat(remote).sort((a, b) => new Date(b.time) - new Date(a.time));
+            .map(r => ({ text: r.note, photo: null, meta: "山友分享（雲端）", time: r.time, mine: false }));
+        let all = local.map(p => ({ ...p, mine: true })).concat(remote).sort((a, b) => new Date(b.time) - new Date(a.time));
         if (!all.length) all = [
-            { text: "【示範帖子】今日鶴藪營地好乾淨,大家記得垃圾帶落山!", photo: null, meta: "山友・示範數據", time: "" },
-            { text: "【示範帖子】西灣營地日出一流,已順路喺回收點交低兩袋膠樽 ♻️", photo: null, meta: "山友・示範數據", time: "" }
+            { text: "【示範帖子】今日鶴藪營地好乾淨,大家記得垃圾帶落山!", photo: null, meta: "山友・示範數據", time: "", mine: false },
+            { text: "【示範帖子】西灣營地日出一流,已順路喺回收點交低兩袋膠樽 ♻️", photo: null, meta: "山友・示範數據", time: "", mine: false }
         ];
         document.getElementById('forum-list').innerHTML = all.slice(0, 20).map(p =>
             `<div class="card"><div style="font-size:0.8rem; color:#1e293b; line-height:1.5;">${p.text}</div>` +
             (p.photo ? `<img class="post-photo" src="${p.photo}">` : "") +
-            `<div class="post-meta"><i class="fa-solid fa-user-circle"></i> ${p.meta}</div></div>`).join("");
+            `<div class="post-meta" style="display:flex; justify-content:space-between; align-items:center;"><span><i class="fa-solid fa-user-circle"></i> ${p.meta}${p.mine ? "・我的帖子" : ""}</span>` +
+            (p.mine ? `<button onclick="deleteForumPost('${p.time}')" style="background:none; border:none; color:#dc2626; font-size:0.68rem; cursor:pointer; font-weight:bold;"><i class="fa-solid fa-trash"></i> 刪除</button>` : "") +
+            `</div></div>`).join("");
+    }
+    function deleteForumPost(time) {
+        const posts = JSON.parse(localStorage.getItem('forum') || "[]").filter(p => p.time !== time);
+        localStorage.setItem('forum', JSON.stringify(posts));
+        renderForum();
+        showCustomAlert("🗑 帖子已從本機刪除。\n\n提示:雲端副本可由管理員於後台（Google Sheet）移除;正式版將支援「一鍵同步刪除」及被舉報內容的管理員下架機制。");
     }
     function addDiary() {
         const text = document.getElementById('diary-text').value.trim();
@@ -1038,8 +1046,15 @@
         document.getElementById('diary-list').innerHTML = entries.length ? entries.map(p =>
             `<div class="card"><div style="font-size:0.8rem; color:#1e293b; line-height:1.5;">${p.text}</div>` +
             (p.photo ? `<img class="post-photo" src="${p.photo}">` : "") +
-            `<div class="post-meta"><i class="fa-solid fa-lock"></i> ${p.meta}</div></div>`).join("")
+            `<div class="post-meta" style="display:flex; justify-content:space-between; align-items:center;"><span><i class="fa-solid fa-lock"></i> ${p.meta}</span>` +
+            `<button onclick="deleteDiary('${p.time}')" style="background:none; border:none; color:#dc2626; font-size:0.68rem; cursor:pointer; font-weight:bold;"><i class="fa-solid fa-trash"></i> 刪除</button>` +
+            `</div></div>`).join("")
             : `<div class="card" style="font-size:0.75rem; color:#94a3b8;">仲未有日記,寫低你嘅第一篇山野隨筆啦!</div>`;
+    }
+    function deleteDiary(time) {
+        const entries = JSON.parse(localStorage.getItem('diary') || "[]").filter(p => p.time !== time);
+        localStorage.setItem('diary', JSON.stringify(entries));
+        renderDiary();
     }
 
     // ============ 舉報信用值（防濫用機制） ============
