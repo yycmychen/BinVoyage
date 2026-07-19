@@ -1,0 +1,12 @@
+{
+  "name": "有跡可循 BinVoyage — 山系減廢 App",
+  "short_name": "有跡可循",
+  "description": "結合政府開放數據，實現「垃圾帶落山、順手做回收」",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#1e293b",
+  "theme_color": "#059669",
+  "icons": [
+    { "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
+  ]
+}
