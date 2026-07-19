@@ -160,7 +160,7 @@
         <div class="notch"></div>
         <div class="status-bar">
             <div class="status-bar-title"><i class="fa-solid fa-mountain-sun"></i><span>有跡可循 BinVoyage</span></div>
-            <div class="status-bar-info"><i class="fa-solid fa-temperature-half"></i> <span id="hdr-temp">--</span>°C | <i class="fa-solid fa-shoe-prints"></i> <span id="header-steps" class="text-highlight">0</span> 步</div>
+            <div class="status-bar-info"><i class="fa-solid fa-temperature-half"></i> <span id="hdr-station" style="font-size:0.65rem; opacity:0.85;">--</span> <span id="hdr-temp">--</span>°C | <i class="fa-solid fa-shoe-prints"></i> <span id="header-steps" class="text-highlight">0</span> 步</div>
         </div>
 
         <div class="app-content no-scrollbar">
@@ -295,7 +295,8 @@
                     <div class="ds-item" id="ds-rcp">
                         <div class="ds-dot dot-wait"></div>
                         <div><div class="ds-name">回收點數據資料（綠在區區及公眾回收桶）</div>
-                        <div class="ds-meta" id="ds-rcp-meta">CSDI WFS API・GeoJSON 空間查詢</div><span class="ds-provider">環境保護署</span></div>
+                        <div class="ds-meta" id="ds-rcp-meta">CSDI WFS API・GeoJSON 空間查詢</div>
+                        <div class="ds-meta" style="color:#92400e;">滿溢狀態：現階段由市民眾包回報推算（郊野垃圾桶無感應器、政府智能桶實時數據未開放）；環保署開放實時 API 後可無縫接入</div><span class="ds-provider">環境保護署 + 眾包</span></div>
                     </div>
                     <div class="ds-item" id="ds-wx">
                         <div class="ds-dot dot-wait"></div>
@@ -552,6 +553,7 @@
         drawWildlifeHotspot();
         updateAiCard();
         generatePlan();
+        updateHeaderTemp();
     }
 
     // ============ 動物出沒熱點 ============
@@ -639,16 +641,38 @@
         }
     }
 
+    // ---- 滿溢狀態引擎：以眾包回報推算回收點狀態 ----
+    // 現階段依賴市民回報（郊野垃圾桶無感應器，市區智能桶數據未開放）；
+    // 環保署一旦開放智能回收箱實時 API，此函數可直接改為讀取官方數據。
+    let allReportsCache = [], lastRcpList = [];
+    const FILL_RADIUS_KM = 0.15, FILL_VALID_HOURS = 6;
+    function getFillStatus(p) {
+        let latest = null;
+        allReportsCache.forEach(r => {
+            if (!r.lat || !r.lng || !(r.type || "").includes("滿溢")) return;
+            const ageH = (Date.now() - new Date(r.time || 0).getTime()) / 3600000;
+            if (ageH > FILL_VALID_HOURS || ageH < 0) return;
+            if (haversine(+r.lat, +r.lng, p.lat, p.lng) <= FILL_RADIUS_KM) {
+                if (!latest || ageH < latest.ageH) latest = { ageH };
+            }
+        });
+        return latest ? { full: true, ageH: latest.ageH } : { full: false, ageH: null };
+    }
+
     function drawRecyclingPoints(list) {
+        lastRcpList = list;
         rcpLayer.clearLayers();
         list.forEach(p => {
             const isGC = /GREEN|綠在|環保站|便利點|流動點/i.test(p.legend + p.name);
+            const fill = getFillStatus(p);
             const icon = L.divIcon({ className: 'custom-leaflet-icon',
-                html: `<div class="recycle-marker ${isGC ? 'green-comm' : ''}"><i class="fa-solid fa-recycle"></i></div>` +
-                      (isGC ? `<div class="recycle-marker-label">綠在區區</div>` : ``),
+                html: `<div class="recycle-marker ${isGC ? 'green-comm' : ''}" ${fill.full ? 'style="color:#dc2626"' : ''}><i class="fa-solid ${fill.full ? 'fa-trash-can-arrow-up' : 'fa-recycle'}"></i></div>` +
+                      (fill.full ? `<div class="recycle-marker-label" style="color:#dc2626; border-color:#fca5a5;">疑似已滿</div>` : isGC ? `<div class="recycle-marker-label">綠在區區</div>` : ``),
                 iconSize: [60, 36], iconAnchor: [30, 30] });
             L.marker([p.lat, p.lng], { icon }).addTo(rcpLayer)
-             .bindPopup(`<b>${p.name}</b><br>回收物：${p.types}<br><span style="font-size:10px;color:#64748b">來源：環保署回收點數據資料</span>`);
+             .bindPopup(`<b>${p.name}</b><br>回收物：${p.types}<br>` +
+                 (fill.full ? `<span style="color:#dc2626; font-weight:bold;">⚠ ${fill.ageH < 1 ? "1 小時內" : Math.round(fill.ageH) + " 小時前"}有市民回報滿溢</span><br>` : `<span style="color:#059669;">● 暫無滿溢回報</span><br>`) +
+                 `<span style="font-size:10px;color:#64748b">位置來源：環保署開放數據・狀態來源：市民眾包回報</span>`);
         });
     }
 
@@ -659,8 +683,9 @@
             forecastData = await res.json();
             setDot('ds-wx', 'ok');
             document.getElementById('ds-wx-meta').innerText = `data.weather.gov.hk・更新於 ${forecastData.updateTime?.slice(0,16).replace('T',' ')}`;
+            // 後備：未取得實時氣溫前，先顯示今日預測最高溫
             const first = forecastData.weatherForecast?.[0];
-            if (first) document.getElementById('hdr-temp').innerText = first.forecastMaxtemp.value;
+            if (first && !liveTemps.length) document.getElementById('hdr-temp').innerText = first.forecastMaxtemp.value;
             populatePlanDates();
         } catch (e) { setDot('ds-wx', 'fail'); }
         updateAiCard();
@@ -735,6 +760,43 @@
             `<i class="fa-solid fa-paw" style="color:#dc2626"></i> 預測出沒物種：<b>${w.animal}</b>——${w.tip}<br>` +
             `<span style="color:#64748b">評分因素：${reasons.join("、")}。` +
             (score >= 70 ? "建議自備垃圾袋，下山順路回收可獲雙倍積分！" : "祝旅途愉快，記得垃圾帶落山。") + `</span>`;
+    }
+
+    // ============ 天文台實時氣溫（rhrread API・27 個自動氣象站） ============
+    // 氣象站座標（整理自天文台站網資料），用作「就近氣象站」配對
+    const HKO_STATIONS = {
+        "京士柏":[22.3119,114.1727],"香港天文台":[22.3020,114.1742],"黃竹坑":[22.2477,114.1600],
+        "打鼓嶺":[22.5286,114.1567],"流浮山":[22.4690,113.9836],"大埔":[22.4462,114.1789],
+        "沙田":[22.4025,114.2100],"屯門":[22.3859,113.9644],"將軍澳":[22.3158,114.2555],
+        "西貢":[22.3755,114.2745],"長洲":[22.2011,114.0267],"赤鱲角":[22.3094,113.9219],
+        "青衣":[22.3440,114.1100],"石崗":[22.4362,114.0847],"荃灣可觀":[22.3837,114.1078],
+        "荃灣城門谷":[22.3714,114.1264],"香港公園":[22.2783,114.1622],"筲箕灣":[22.2818,114.2361],
+        "九龍城":[22.3350,114.1849],"跑馬地":[22.2701,114.1836],"黃大仙":[22.3363,114.2055],
+        "赤柱":[22.2141,114.2136],"觀塘":[22.3186,114.2233],"深水埗":[22.3358,114.1594],
+        "啟德跑道公園":[22.3049,114.2169],"元朗公園":[22.4410,114.0178],"大美督":[22.4752,114.2379]
+    };
+    let liveTemps = [];   // [{place, value}]
+    async function fetchCurrentTemp() {
+        try {
+            const res = await fetch("https://data.weather.gov.hk/weatherAPI/opendata/weather.php?dataType=rhrread&lang=tc");
+            const data = await res.json();
+            liveTemps = (data.temperature?.data || []).filter(t => HKO_STATIONS[t.place]);
+            updateHeaderTemp();
+        } catch (e) { /* 保留九天預報的後備溫度 */ }
+    }
+    function updateHeaderTemp() {
+        if (!liveTemps.length) return;
+        let best = null, bestD = Infinity;
+        liveTemps.forEach(t => {
+            const [la, ln] = HKO_STATIONS[t.place];
+            const d = haversine(selectedCamp.lat, selectedCamp.lng, la, ln);
+            if (d < bestD) { bestD = d; best = t; }
+        });
+        if (best) {
+            document.getElementById('hdr-temp').innerText = best.value;
+            document.getElementById('hdr-station').innerText = best.place;
+            document.getElementById('hdr-station').title = `距離${selectedCamp.tc}最近的天文台氣象站（約 ${bestD.toFixed(0)} 公里）・實時氣溫`;
+        }
     }
 
     // ============ 天文台即時天氣警告（惡劣天氣提示用） ============
@@ -844,16 +906,24 @@
     // ============ 順路回收規劃（真實回收點 + Haversine） ============
     function openRoutingModal() {
         document.getElementById('routing-start').innerText = `起點：${selectedCamp.tc}（${selectedCamp.park}）`;
-        const pool = (liveRecyclingPoints.length ? liveRecyclingPoints : RCP_FALLBACK)
-            .map(p => ({ ...p, dist: haversine(selectedCamp.lat, selectedCamp.lng, p.lat, p.lng) }))
-            .sort((a, b) => a.dist - b.dist).slice(0, 3);
+        // AI 避滿排序：未滿優先，同狀態下距離近者優先
+        const ranked = (liveRecyclingPoints.length ? liveRecyclingPoints : RCP_FALLBACK)
+            .map(p => ({ ...p, dist: haversine(selectedCamp.lat, selectedCamp.lng, p.lat, p.lng), fill: getFillStatus(p) }))
+            .sort((a, b) => a.dist - b.dist);
+        const nearest = ranked[0];
+        const pool = [...ranked].sort((a, b) => (a.fill.full - b.fill.full) || (a.dist - b.dist)).slice(0, 3);
         const box = document.getElementById('rp-options');
         box.innerHTML = "";
+        // AI 建議：最近點已滿時主動引導改道
+        if (nearest && nearest.fill.full && pool[0] && !pool[0].fill.full) {
+            box.innerHTML = `<div class="tip-banner"><i class="fa-solid fa-robot"></i> <b>AI 建議：</b>距離最近的「${nearest.name}」在 ${nearest.fill.ageH < 1 ? "1 小時內" : Math.round(nearest.fill.ageH) + " 小時前"}被市民回報滿溢，已為你改為推薦「${pool[0].name}」（多行 ${(pool[0].dist - nearest.dist).toFixed(1)} km，完成回收可獲 +50 改道積分）。</div>`;
+        }
         if (!pool.length) box.innerHTML = "<div style='font-size:0.75rem;color:#64748b'>此範圍暫未有回收點數據，請將地圖移向市區後重試。</div>";
         pool.forEach(p => {
             const div = document.createElement('div');
             div.className = "rp-option";
-            div.innerHTML = `<div><div class="step-text-main">${p.name}</div><div class="step-text-sub">${p.types}</div></div><div class="rp-dist">${p.dist.toFixed(1)} km</div>`;
+            if (p.fill.full) div.style.opacity = "0.55";
+            div.innerHTML = `<div><div class="step-text-main">${p.fill.full ? "⚠ " : ""}${p.name}</div><div class="step-text-sub">${p.types}${p.fill.full ? `・<span style="color:#dc2626; font-weight:bold;">疑似已滿（${p.fill.ageH < 1 ? "1 小時內" : Math.round(p.fill.ageH) + " 小時前"}回報）</span>` : "・<span style='color:#059669;'>暫無滿溢回報</span>"}</div></div><div class="rp-dist">${p.dist.toFixed(1)} km</div>`;
             div.onclick = () => startNavigation(p);
             box.appendChild(div);
         });
@@ -1031,6 +1101,8 @@
                 if (Array.isArray(remote)) all = all.concat(remote);
             } catch (e) { /* GET 或會受 CORS 限制，僅顯示本機 */ }
         }
+        allReportsCache = all;
+        if (lastRcpList.length) drawRecyclingPoints(lastRcpList); // 以最新回報刷新回收點滿溢狀態
         all.slice(-50).forEach(r => {
             if (!r.lat || !r.lng) return;
             const icon = L.divIcon({ className: 'custom-leaflet-icon',
@@ -1083,6 +1155,8 @@
     fetchWeather();
     fetchHolidays();
     fetchWarnings();
+    fetchCurrentTemp();
+    setInterval(fetchCurrentTemp, 10 * 60 * 1000); // 實時氣溫每 10 分鐘更新
     drawReports();
     registerPwa();
     renderCredit();
