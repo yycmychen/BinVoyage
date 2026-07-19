@@ -624,6 +624,16 @@
         } catch (e) { setDot('ds-wx', 'fail'); }
         updateAiCard();
     }
+    // 1823 假期官方快照（2026 至 2027 年，摘錄自 1823.gov.hk/common/ical/tc.json，2026-07-19 下載）
+    // 註：1823 伺服器未開放跨域讀取（CORS），瀏覽器直接 fetch 會被攔截，故以官方快照為後備。
+    // 公眾假期每年 5 月左右公布下一年度，屆時更新此列表即可。
+    const HOLIDAY_SNAPSHOT = [
+        "20260101","20260217","20260218","20260219","20260403","20260404","20260406","20260407",
+        "20260501","20260525","20260619","20260701","20260926","20261001","20261019","20261225","20261226",
+        "20270101","20270206","20270208","20270209","20270326","20270327","20270329","20270405",
+        "20270501","20270513","20270609","20270701","20270916","20271001","20271008","20271225","20271227"
+    ];
+
     async function fetchHolidays() {
         try {
             const res = await fetch("https://www.1823.gov.hk/common/ical/tc.json");
@@ -633,8 +643,12 @@
                 if (d) holidaySet.add(String(d).slice(0, 8));
             });
             setDot('ds-hol', 'ok');
-            document.getElementById('ds-hol-meta').innerText = `1823 假期 API・已載入 ${holidaySet.size} 個公眾假期`;
-        } catch (e) { setDot('ds-hol', 'fail'); }
+            document.getElementById('ds-hol-meta').innerText = `1823 假期 API・已即時載入 ${holidaySet.size} 個公眾假期`;
+        } catch (e) {
+            HOLIDAY_SNAPSHOT.forEach(d => holidaySet.add(d));
+            setDot('ds-hol', 'ok');
+            document.getElementById('ds-hol-meta').innerText = `1823 伺服器不支援跨域讀取，已使用官方數據快照（2026–27 年 ${HOLIDAY_SNAPSHOT.length} 個假期，2026-07 下載）`;
+        }
         updateAiCard();
     }
 
