@@ -108,7 +108,14 @@
         .ds-provider { display: inline-block; background: #eef2ff; color: #4338ca; font-size: 0.62rem; padding: 1px 6px; border-radius: 999px; font-weight: bold; margin-top: 3px; }
 
         .bottom-nav { background-color: white; border-top: 1px solid #e2e8f0; display: flex; justify-content: space-around; padding: 10px 8px 18px 8px; z-index: 50; }
-        .nav-btn { background: none; border: none; color: #94a3b8; display: flex; flex-direction: column; align-items: center; gap: 2px; width: 25%; cursor: pointer; }
+        .nav-btn { background: none; border: none; color: #94a3b8; display: flex; flex-direction: column; align-items: center; gap: 2px; width: 20%; cursor: pointer; }
+
+        /* 行程規劃 checklist 與提示 */
+        .chk-item { display: flex; align-items: center; gap: 10px; padding: 9px 12px; background: white; border: 1px solid #e2e8f0; border-radius: 10px; margin-bottom: 6px; font-size: 0.8rem; color: #334155; }
+        .chk-item input { width: 16px; height: 16px; accent-color: #059669; flex-shrink: 0; }
+        .chk-item .chk-why { font-size: 0.65rem; color: #94a3b8; display: block; }
+        .tip-banner { background: #fef3c7; border: 1px solid #fde68a; color: #92400e; border-radius: 10px; padding: 10px 12px; font-size: 0.75rem; line-height: 1.55; margin-bottom: 10px; }
+        .warn-banner { background: #fee2e2; border: 1px solid #fca5a5; color: #991b1b; border-radius: 10px; padding: 10px 12px; font-size: 0.75rem; line-height: 1.55; margin-bottom: 10px; font-weight: bold; }
         .nav-btn.active { color: #059669; }
         .nav-btn i { font-size: 1.1rem; }
         .nav-btn span { font-size: 9px; font-weight: bold; }
@@ -196,9 +203,33 @@
                 </div>
             </div>
 
-            <!-- 模組 2: 舉報（模擬） -->
+            <!-- 模組 1b: AI 行程規劃 -->
+            <div id="tab-plan" class="tab-content page-container">
+                <div class="section-title"><i class="fa-solid fa-clipboard-list"></i> AI 行程規劃 <span class="ai-tag tag-live">即時開放數據</span></div>
+                <div class="card">
+                    <div style="font-size:0.72rem; font-weight:bold; color:#475569; margin-bottom:4px;">目的地（與導航頁同步）</div>
+                    <div id="plan-dest" style="font-weight:bold; color:#059669; margin-bottom:10px; font-size:0.9rem;">—</div>
+                    <div style="display:flex; gap:8px;">
+                        <select id="plan-date" class="trail-select" style="width:60%;" onchange="generatePlan()"><option>載入九天預報中⋯⋯</option></select>
+                        <select id="plan-time" class="trail-select" style="width:40%;" onchange="generatePlan()">
+                            <option value="am">朝早出發</option>
+                            <option value="pm">下午出發</option>
+                        </select>
+                    </div>
+                </div>
+                <div id="plan-output"><div class="card" style="font-size:0.75rem; color:#64748b;">正在等待天文台九天預報數據⋯⋯</div></div>
+            </div>
+
+            <!-- 模組 2: 舉報 -->
             <div id="tab-report" class="tab-content page-container">
                 <div class="section-title"><i class="fa-solid fa-camera"></i> 郊野守護者舉報平台 <span class="ai-tag tag-live" id="report-mode-tag">本機記錄</span></div>
+                <div class="card" style="display:flex; justify-content:space-between; align-items:center;">
+                    <div>
+                        <div style="font-size:0.72rem; color:#64748b;">我的舉報信用值（防濫用機制）</div>
+                        <div style="font-size:1.5rem; font-weight:800;" id="credit-score">100</div>
+                    </div>
+                    <div style="text-align:right; font-size:0.62rem; color:#64748b; line-height:1.6;">AI 初審 + 人工覆核<br>屬實 +5・虛假 −30<br>歸零即暫停舉報權限</div>
+                </div>
                 <div class="grid-container">
                     <div class="card action-card" id="rt-feed" onclick="setReportType('非法餵飼野生動物', this)"><div class="icon-circle icon-red"><i class="fa-solid fa-ban"></i></div><span class="action-title">非法餵飼舉報</span></div>
                     <div class="card action-card" id="rt-eco" onclick="setReportType('野生動植物生態記錄', this)"><div class="icon-circle icon-green"><i class="fa-solid fa-frog"></i></div><span class="action-title">物種生態記錄</span></div>
@@ -215,8 +246,15 @@
                     <div id="ai-result" style="display:none; margin-top:8px; font-size:0.78rem; font-weight:bold; padding:8px 10px; border-radius:8px; background:#f0fdf4; color:#047857;"></div>
                     <button class="btn-full" id="submit-report-btn" style="display:none; margin-top:10px;" onclick="submitReport()"><i class="fa-solid fa-paper-plane"></i> 提交回報</button>
                 </div>
+                <div class="card" style="background:#f8fafc;">
+                    <div style="font-size:0.7rem; color:#64748b; margin-bottom:8px;"><i class="fa-solid fa-user-shield"></i> 管理員覆核演示（正式版於後台由義工／管理員操作）：</div>
+                    <div style="display:flex; gap:8px;">
+                        <button class="btn-claim" style="flex:1; padding:8px;" onclick="moderate(5)">核實屬實 +5</button>
+                        <button class="btn-claim" style="flex:1; padding:8px; background:#fee2e2; color:#b91c1c;" onclick="moderate(-30)">虛假舉報 −30</button>
+                    </div>
+                </div>
                 <div class="card" style="background:#eef2ff; border-color:#c7d2fe;">
-                    <div style="font-size:0.75rem; color:#3730a3; line-height:1.5;"><i class="fa-solid fa-arrows-rotate"></i> <b>數據回饋設計：</b>市民回報的滿溢及生態數據，將整理成開放格式（CSV/GeoJSON）回饋漁護署及食環署，形成「開放數據 → 應用 → 產生新開放數據」的閉環。</div>
+                    <div style="font-size:0.75rem; color:#3730a3; line-height:1.5;"><i class="fa-solid fa-arrows-rotate"></i> <b>數據回饋設計：</b>市民回報的滿溢及生態數據，將整理成開放格式（CSV/GeoJSON）回饋漁護署及食環署，形成「開放數據 → 應用 → 產生新開放數據」的閉環。舉報信用值機制（AI 初審 → 人工覆核 → 信用增減）確保回饋數據的質素。</div>
                 </div>
             </div>
 
@@ -285,6 +323,7 @@
 
         <div class="bottom-nav">
             <button class="nav-btn active" id="nav-map-btn" onclick="switchTab('map', this)"><i class="fa-solid fa-map-location-dot"></i><span>導航</span></button>
+            <button class="nav-btn" id="nav-plan-btn" onclick="switchTab('plan', this)"><i class="fa-solid fa-clipboard-list"></i><span>行程</span></button>
             <button class="nav-btn" id="nav-report-btn" onclick="switchTab('report', this)"><i class="fa-solid fa-camera"></i><span>舉報</span></button>
             <button class="nav-btn" id="nav-rewards-btn" onclick="switchTab('rewards', this)"><i class="fa-solid fa-gift"></i><span>任務</span></button>
             <button class="nav-btn" id="nav-data-btn" onclick="switchTab('data', this)"><i class="fa-solid fa-database"></i><span>數據</span></button>
@@ -512,6 +551,7 @@
         map.flyTo([selectedCamp.lat, selectedCamp.lng], 14, { duration: 1 });
         drawWildlifeHotspot();
         updateAiCard();
+        generatePlan();
     }
 
     // ============ 動物出沒熱點 ============
@@ -621,6 +661,7 @@
             document.getElementById('ds-wx-meta').innerText = `data.weather.gov.hk・更新於 ${forecastData.updateTime?.slice(0,16).replace('T',' ')}`;
             const first = forecastData.weatherForecast?.[0];
             if (first) document.getElementById('hdr-temp').innerText = first.forecastMaxtemp.value;
+            populatePlanDates();
         } catch (e) { setDot('ds-wx', 'fail'); }
         updateAiCard();
     }
@@ -650,7 +691,26 @@
             document.getElementById('ds-hol-meta').innerText = `1823 伺服器不支援跨域讀取，已使用官方數據快照（2026–27 年 ${HOLIDAY_SNAPSHOT.length} 個假期，2026-07 下載）`;
         }
         updateAiCard();
+        if (forecastData) populatePlanDates();
     }
+
+    // 垃圾壓力指數（透明公式，供 AI 卡及行程規劃共用）
+    function computePressure(f, isHoliday, isWeekend) {
+        let score = 0, reasons = [];
+        if (isHoliday) { score += 40; reasons.push("公眾假期"); }
+        else if (isWeekend) { score += 40; reasons.push("週末"); }
+        const psr = f.PSR || "";
+        if (psr.includes("低") && !psr.includes("中")) { score += 30; reasons.push("降雨概率低"); }
+        else if (psr.includes("中")) { score += 10; reasons.push("降雨概率中等"); }
+        else { reasons.push("降雨概率高"); }
+        const t = f.forecastMaxtemp.value;
+        if (t >= 18 && t <= 30) { score += 20; reasons.push("氣溫舒適"); }
+        else if (t > 30 && t <= 34) { score += 10; reasons.push("天氣炎熱"); }
+        if (selectedCamp.tents === ">50") { score += 10; reasons.push("大型營地"); }
+        const lvl = score >= 70 ? ["高","p-high"] : score >= 40 ? ["中等","p-mid"] : ["低","p-low"];
+        return { score, reasons, lvl };
+    }
+    function isHolDate(d) { return holidaySet.has(d); }
 
     // 尋找未來 7 日內第一個週末或公眾假期，計算該日壓力
     function updateAiCard() {
@@ -666,19 +726,8 @@
         if (!target) target = { f: forecastData.weatherForecast[0], isHoliday: false, isWeekend: false };
         const { f, isHoliday, isWeekend } = target;
 
-        let score = 0, reasons = [];
-        if (isHoliday) { score += 40; reasons.push("公眾假期"); }
-        else if (isWeekend) { score += 40; reasons.push("週末"); }
-        const psr = f.PSR || "";
-        if (psr.includes("低") && !psr.includes("中")) { score += 30; reasons.push("降雨概率低"); }
-        else if (psr.includes("中")) { score += 10; reasons.push("降雨概率中等"); }
-        else { reasons.push("降雨概率高"); }
+        const { score, reasons, lvl } = computePressure(f, isHoliday, isWeekend);
         const t = f.forecastMaxtemp.value;
-        if (t >= 18 && t <= 30) { score += 20; reasons.push("氣溫舒適"); }
-        else if (t > 30 && t <= 34) { score += 10; reasons.push("天氣炎熱"); }
-        if (selectedCamp.tents === ">50") { score += 10; reasons.push("大型營地"); }
-
-        const lvl = score >= 70 ? ["高","p-high"] : score >= 40 ? ["中等","p-mid"] : ["低","p-low"];
         const w = getWildlife();
         el.innerHTML = `<b>${f.forecastDate.slice(4,6)}月${f.forecastDate.slice(6,8)}日（${f.week}）・${selectedCamp.tc}</b><br>` +
             `預測垃圾壓力：<span class="pressure-badge ${lvl[1]}">${lvl[0]}（${score}/100）</span><br>` +
@@ -686,6 +735,110 @@
             `<i class="fa-solid fa-paw" style="color:#dc2626"></i> 預測出沒物種：<b>${w.animal}</b>——${w.tip}<br>` +
             `<span style="color:#64748b">評分因素：${reasons.join("、")}。` +
             (score >= 70 ? "建議自備垃圾袋，下山順路回收可獲雙倍積分！" : "祝旅途愉快，記得垃圾帶落山。") + `</span>`;
+    }
+
+    // ============ 天文台即時天氣警告（惡劣天氣提示用） ============
+    let activeWarnings = [];
+    async function fetchWarnings() {
+        try {
+            const res = await fetch("https://data.weather.gov.hk/weatherAPI/opendata/weather.php?dataType=warnsum&lang=tc");
+            const data = await res.json();
+            activeWarnings = Object.values(data || {}).filter(w => w && w.actionCode !== "CANCEL").map(w => w.name);
+        } catch (e) { activeWarnings = []; }
+        generatePlan();
+    }
+
+    // ============ AI 行程規劃 + 智能裝備清單 ============
+    function populatePlanDates() {
+        if (!forecastData) return;
+        const sel = document.getElementById('plan-date');
+        sel.innerHTML = "";
+        forecastData.weatherForecast.forEach((f, i) => {
+            const o = document.createElement('option');
+            o.value = i;
+            const isHol = isHolDate(f.forecastDate);
+            o.textContent = `${f.forecastDate.slice(4,6)}月${f.forecastDate.slice(6,8)}日（${f.week}）${isHol ? "・假期" : ""}`;
+            sel.appendChild(o);
+        });
+        generatePlan();
+    }
+
+    function generatePlan() {
+        const out = document.getElementById('plan-output');
+        if (!out) return;
+        document.getElementById('plan-dest').innerText = `${selectedCamp.tc}・${selectedCamp.park}`;
+        if (!forecastData) return;
+        const idx = parseInt(document.getElementById('plan-date').value || "0");
+        const f = forecastData.weatherForecast[idx] || forecastData.weatherForecast[0];
+        const timeSlot = document.getElementById('plan-time').value;
+        const d = new Date(`${f.forecastDate.slice(0,4)}-${f.forecastDate.slice(4,6)}-${f.forecastDate.slice(6,8)}`);
+        const isWeekend = d.getDay() === 0 || d.getDay() === 6;
+        const isHoliday = isHolDate(f.forecastDate);
+        const { score, reasons, lvl } = computePressure(f, isHoliday, isWeekend);
+        const t = f.forecastMaxtemp.value;
+        const rainy = /雨|雷暴/.test(f.forecastWeather) || /高/.test(f.PSR || "");
+        const month = d.getMonth() + 1;
+
+        // ---- 智能裝備清單（規則式 AI・每項附原因） ----
+        const items = [];
+        items.push(["垃圾袋 × 2", "自備垃圾袋,垃圾帶落山（本 App 核心任務,回收可賺積分）"]);
+        items.push(["足夠食水", selectedCamp.water.includes("溪水") ? `${selectedCamp.tc}只有季節性溪水,必須自攜足夠食水` : "營地有" + selectedCamp.water + ",仍建議帶備用"]);
+        items.push(["手機充飽電＋行動電源", "GPS 導航、SOS 求救及回收掃碼都需要電量"]);
+        if (rainy) {
+            items.push(["雨具・防水袋", `天文台預測:${f.forecastWeather}`]);
+            items.push(["防滑行山鞋", "落雨路滑,山徑濕滑易生意外"]);
+        }
+        if (t >= 33) {
+            items.push(["電解質飲品・帽・防曬", `預測最高 ${t}°C,酷熱天氣下行山有中暑風險`]);
+        }
+        if (month >= 4 && month <= 10) {
+            items.push(["蚊怕水", "夏季郊野蚊蟲活躍,亦可減低蚊傳疾病風險"]);
+        }
+        items.push(["密實食物盒", `${getWildlife().animal}出沒地區,食物密封可免招引野生動物`]);
+        if ((isHoliday || isWeekend) && selectedCamp.tents === ">50") {
+            items.push(["提早出發霸位", "大型營地假日人多,預計垃圾桶較快滿溢"]);
+        }
+
+        // ---- 貼心建議 ----
+        let tips = [];
+        if (t >= 33 && timeSlot === "pm") tips.push(`預測最高氣溫 ${t}°C,建議改為朝早出發,避開正午酷熱時段`);
+        if (t >= 33 && timeSlot === "am") tips.push("記得每 30 分鐘補水一次,發現同行者頭暈作嘔要即時休息求助");
+        if (rainy) tips.push("有驟雨或雷暴預測,避免行溪澗路線,雷暴時遠離山頂及大樹");
+        if (isHoliday) tips.push("當日是公眾假期,郊野人流高峰,垃圾請務必帶落山,下山回收點見地圖");
+        if (score >= 70) tips.push("此日垃圾壓力預測為「高」——完成順路回收可獲雙倍積分!");
+
+        // ---- 即時天氣警告（天文台 warnsum API） ----
+        let warnHtml = "";
+        if (activeWarnings.length) {
+            warnHtml = `<div class="warn-banner"><i class="fa-solid fa-triangle-exclamation"></i> 天文台現正生效警告:${activeWarnings.join("、")}${/酷熱/.test(activeWarnings.join()) ? "——酷熱警告下請縮短行程、加倍補水" : ""}${/(雷暴|暴雨|颱風|風球)/.test(activeWarnings.join()) ? "——惡劣天氣,強烈建議改期!" : ""}</div>`;
+        }
+
+        out.innerHTML = `
+            ${warnHtml}
+            <div class="card">
+                <div style="font-size:0.8rem; font-weight:bold; color:#1e293b; margin-bottom:6px;"><i class="fa-solid fa-cloud-sun" style="color:#eab308"></i> ${f.forecastDate.slice(4,6)}月${f.forecastDate.slice(6,8)}日（${f.week}）${isHoliday ? '<span class="ai-tag tag-sim" style="background:#fee2e2;">公眾假期</span>' : isWeekend ? '<span class="ai-tag tag-sim" style="background:#fef3c7; color:#b45309;">週末</span>' : ""}</div>
+                <div style="font-size:0.75rem; color:#475569; line-height:1.5;">${f.forecastWeather}<br>${f.forecastMintemp.value}–${t}°C・相對濕度 ${f.forecastMinrh.value}–${f.forecastMaxrh.value}%・降雨概率:${f.PSR || "—"}</div>
+                <div style="font-size:0.75rem; margin-top:6px;">垃圾壓力預測:<span class="pressure-badge ${lvl[1]}">${lvl[0]}（${score}/100）</span> <span style="color:#94a3b8; font-size:0.65rem;">${reasons.join("、")}</span></div>
+            </div>
+            ${tips.length ? `<div class="tip-banner"><i class="fa-solid fa-lightbulb"></i> <b>貼心建議:</b><br>${tips.map(x => "・" + x).join("<br>")}</div>` : ""}
+            <div style="font-size:0.78rem; font-weight:bold; color:#475569; margin-bottom:6px;"><i class="fa-solid fa-list-check" style="color:#059669"></i> 智能裝備清單（按天氣・營地・季節自動生成）:</div>
+            ${items.map((x, i) => `<label class="chk-item"><input type="checkbox"><span><b>${x[0]}</b><span class="chk-why">${x[1]}</span></span></label>`).join("")}
+            <div style="font-size:0.62rem; color:#94a3b8; margin-top:8px;">數據來源:天文台九天預報＋天氣警告 API・1823 公眾假期・漁護署營地資料（水源／營位）</div>`;
+    }
+
+    // ============ 舉報信用值（防濫用機制） ============
+    let userCredit = parseInt(localStorage.getItem('credit') ?? "100");
+    function renderCredit() {
+        const el = document.getElementById('credit-score');
+        el.innerText = userCredit;
+        el.style.color = userCredit <= 0 ? "#dc2626" : userCredit < 40 ? "#d97706" : "#059669";
+    }
+    function moderate(delta) {
+        userCredit = Math.max(0, Math.min(200, userCredit + delta));
+        localStorage.setItem('credit', userCredit);
+        renderCredit();
+        if (delta > 0) showCustomAlert(`✅ 管理員核實舉報屬實,信用值 +${delta}。\n\n現時信用值:${userCredit}`);
+        else showCustomAlert(`⚠️ 管理員判定為虛假舉報,信用值 ${delta}。\n\n現時信用值:${userCredit}${userCredit <= 0 ? "\n\n信用值已歸零,舉報權限已暫停!需向管理員申訴或以優質回收記錄回復信用。" : ""}`);
     }
 
     // ============ 順路回收規劃（真實回收點 + Haversine） ============
@@ -749,8 +902,8 @@
         document.querySelectorAll('.demo-step-btn').forEach(b => b.classList.remove('active'));
         btn.classList.add('active');
         if (step === 1) {
-            switchTab('map', document.getElementById('nav-map-btn'));
-            showCustomAlert("步驟 1: 出發前\n\n系統結合天文台九天預報 + 1823 公眾假期數據，計算目標營地在下個假期的「垃圾壓力指數」。請看地圖上方的預測卡片——這是即時真實數據！");
+            switchTab('plan', document.getElementById('nav-plan-btn'));
+            showCustomAlert("步驟 1: 出發前\n\nAI 行程規劃:揀日子,系統即時結合天文台九天預報、天氣警告、1823 假期及漁護署營地資料,自動生成當日的垃圾壓力預測、貼心建議及裝備清單(每項都寫明原因)。");
         } else if (step === 2) {
             switchTab('map', document.getElementById('nav-map-btn'));
             const idx = AFCD_CAMPSITES.findIndex(c => c.en === "Hok Tau");
@@ -834,6 +987,10 @@
     }
 
     async function submitReport() {
+        if (userCredit <= 0) {
+            showCustomAlert("⛔ 你的舉報信用值已歸零,舉報權限暫停。\n\n可透過完成優質回收記錄或向管理員申訴回復信用。此機制防止濫用舉報影響數據質素。");
+            return;
+        }
         const report = {
             type: currentReportType,
             lat: userLatLng ? userLatLng[0] : selectedCamp.lat,
@@ -925,8 +1082,10 @@
     initMap();
     fetchWeather();
     fetchHolidays();
+    fetchWarnings();
     drawReports();
     registerPwa();
+    renderCredit();
     if (CONFIG.BACKEND_URL) document.getElementById('report-mode-tag').innerText = "雲端同步";
     if (CONFIG.TM_MODEL_URL) document.getElementById('ai-model-hint').innerText = "AI 滿溢辨識：已啟用";
     setInterval(fetchWeather, 30 * 60 * 1000); // 每 30 分鐘更新天氣
