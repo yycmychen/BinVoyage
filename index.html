@@ -238,7 +238,7 @@
                         <div style="font-size:0.72rem; color:#64748b;">我的舉報信用值（防濫用機制）</div>
                         <div style="font-size:1.5rem; font-weight:800;" id="credit-score">100</div>
                     </div>
-                    <div style="text-align:right; font-size:0.62rem; color:#64748b; line-height:1.6;">AI 初審 + 人工覆核<br>屬實 +5・虛假 −30<br>歸零即暫停舉報權限</div>
+                    <div style="text-align:right; font-size:0.62rem; color:#64748b; line-height:1.6;">AI 初審 + 人工覆核<br>屬實 +5・虛假 −30・歸零停權<br>匿名裝置編號：<span id="device-id-label" style="font-weight:bold;"></span></div>
                 </div>
                 <div class="grid-container">
                     <div class="card action-card" id="rt-feed" onclick="setReportType('非法餵飼野生動物', this)"><div class="icon-circle icon-red"><i class="fa-solid fa-ban"></i></div><span class="action-title">非法餵飼舉報</span></div>
@@ -380,6 +380,11 @@
                         <div class="ds-dot dot-wait"></div>
                         <div><div class="ds-name">郊野公園避雨亭位置</div>
                         <div class="ds-meta" id="ds-shelter-meta">CSDI WFS・按目的地 5 公里範圍即時載入,配合雷暴警告顯示最近避雨點</div><span class="ds-provider">漁農自然護理署</span></div>
+                    </div>
+                    <div class="ds-item" id="ds-water">
+                        <div class="ds-dot dot-wait"></div>
+                        <div><div class="ds-name">政府場地飲水機／加水站</div>
+                        <div class="ds-meta" id="ds-water-meta">CSDI WFS・按目的地 5 公里範圍即時載入,推動自攜水樽減塑</div><span class="ds-provider">環境保護署（跨部門）</span></div>
                     </div>
                     <div class="ds-item" id="ds-kmb">
                         <div class="ds-dot dot-wait"></div>
@@ -647,11 +652,13 @@
         wildlifeLayer = L.layerGroup().addTo(map);
         trailLayer = L.layerGroup().addTo(map);
         shelterLayer = L.layerGroup().addTo(map);
+        waterLayer = L.layerGroup().addTo(map);
         drawCampsites();
         drawWildlifeHotspot();
         map.on('moveend', debounceFetchTrails);
         fetchTrails();
         fetchSheltersAround();
+        fetchWaterAround();
         setDot('ds-camp', 'ok');
         document.getElementById('ds-camp-meta').innerText = `data.gov.hk：hk-afcd-afcdlist-campsite（已載入 ${AFCD_CAMPSITES.length} 個營地）`;
 
@@ -702,6 +709,7 @@
         generatePlan();
         updateHeaderTemp();
         fetchSheltersAround();
+        fetchWaterAround();
     }
 
     // ============ 動物出沒熱點 ============
@@ -944,16 +952,17 @@
     async function fetchSheltersAround() {
         if (!shelterLayer) return;
         const d = 0.045; // 約 5 公里範圍
-        const q = bbox => fetch(`${SHELTER_WFS}?service=WFS&version=2.0.0&request=GetFeature&typeNames=csdi:geotagging&outputFormat=GEOJSON&count=60&bbox=${bbox}`)
+        const q = bbox => fetch(`${SHELTER_WFS}?service=WFS&version=2.0.0&request=GetFeature&typeNames=csdi:Shelters_Shelters_Ext_GDB&outputFormat=GEOJSON&count=60&srsName=EPSG:4326&bbox=${bbox}`)
             .then(r => { if (!r.ok) throw new Error(r.status); return r.json(); });
         try {
             let gj = await q(`${selectedCamp.lat-d},${selectedCamp.lng-d},${selectedCamp.lat+d},${selectedCamp.lng+d},urn:ogc:def:crs:EPSG::4326`);
             if (!gj.features || !gj.features.length)
                 gj = await q(`${selectedCamp.lng-d},${selectedCamp.lat-d},${selectedCamp.lng+d},${selectedCamp.lat+d},urn:ogc:def:crs:EPSG::4326`);
-            destShelters = (gj.features || []).map(f => ({
-                name: f.properties.Name_of_Building_Facility_TC || f.properties.address_tc || f.properties.Name_of_Building_Facility || "避雨亭",
-                lat: f.geometry.coordinates[1], lng: f.geometry.coordinates[0]
-            }));
+            destShelters = (gj.features || []).map(f => {
+                const pr = f.properties || {};
+                const name = Object.entries(pr).find(([k, v]) => typeof v === "string" && /[一-鿿]/.test(v) && !/日期|坐標/.test(k))?.[1] || "避雨亭";
+                return { name, lat: f.geometry.coordinates[1], lng: f.geometry.coordinates[0] };
+            });
             shelterLayer.clearLayers();
             destShelters.forEach(p => {
                 const icon = L.divIcon({ className: 'custom-leaflet-icon',
@@ -970,6 +979,47 @@
         }
         generatePlan();
     }
+    // ============ 飲水機圖層（環保署「政府場地內供公眾使用的飲水機」・CSDI WFS） ============
+    let waterLayer = null, destWater = [];
+    const WATER_WFS = "https://portal.csdi.gov.hk/server/services/common/epd_rcd_1638154342238_45289/MapServer/WFSServer";
+    async function fetchWaterAround() {
+        if (!waterLayer) return;
+        const d = 0.045;
+        const q = bbox => fetch(`${WATER_WFS}?service=WFS&version=2.0.0&request=GetFeature&typeNames=csdi:EPDWD&outputFormat=GEOJSON&count=60&srsName=EPSG:4326&bbox=${bbox}`)
+            .then(r => { if (!r.ok) throw new Error(r.status); return r.json(); });
+        try {
+            let gj = await q(`${selectedCamp.lat-d},${selectedCamp.lng-d},${selectedCamp.lat+d},${selectedCamp.lng+d},urn:ogc:def:crs:EPSG::4326`);
+            if (!gj.features || !gj.features.length)
+                gj = await q(`${selectedCamp.lng-d},${selectedCamp.lat-d},${selectedCamp.lng+d},${selectedCamp.lat+d},urn:ogc:def:crs:EPSG::4326`);
+            destWater = (gj.features || []).map(f => {
+                const pr = f.properties || {};
+                const name = pr["政府場地名稱"] || pr.Government_Venue_Name || "政府場地飲水機";
+                return { name, addr: pr["地址"] || "", lat: f.geometry.coordinates[1], lng: f.geometry.coordinates[0] };
+            });
+            waterLayer.clearLayers();
+            destWater.forEach(p => {
+                const icon = L.divIcon({ className: 'custom-leaflet-icon',
+                    html: `<div class="recycle-marker" style="color:#0ea5e9"><i class="fa-solid fa-faucet-drip"></i></div>`,
+                    iconSize: [28, 28], iconAnchor: [14, 24] });
+                L.marker([p.lat, p.lng], { icon }).addTo(waterLayer)
+                 .bindPopup(`<b>${p.name}</b>（飲水機／加水站）<br>${p.addr}<br><span style="font-size:10px;color:#64748b">來源：環保署「政府場地飲水機」開放數據・自帶水樽減塑</span>`);
+            });
+            setDot('ds-water', 'ok');
+            document.getElementById('ds-water-meta').innerText = `CSDI WFS・目的地 5 公里內 ${destWater.length} 部飲水機（即時）`;
+        } catch (e) {
+            destWater = [];
+            setDot('ds-water', 'fail');
+            document.getElementById('ds-water-meta').innerText = "API 暫不可用（郊野飲水機分佈本就有限,請自攜足夠食水）";
+        }
+        generatePlan();
+    }
+    function nearestWaterText() {
+        if (!destWater.length) return "";
+        const s = destWater.map(p => ({ ...p, dist: haversine(selectedCamp.lat, selectedCamp.lng, p.lat, p.lng) }))
+            .sort((a, b) => a.dist - b.dist)[0];
+        return `最近飲水機：${s.name}（約 ${s.dist.toFixed(1)} 公里）`;
+    }
+
     function nearestShelterText() {
         if (!destShelters.length) return "";
         const s = destShelters.map(p => ({ ...p, dist: haversine(selectedCamp.lat, selectedCamp.lng, p.lat, p.lng) }))
@@ -1067,6 +1117,8 @@
             items.push(["足夠食水", "郊野公園內飲水設施有限,建議自攜"]);
         if (selectedCamp.kind === 'trail' && (selectedCamp.diff || "").includes("高"))
             items.push(["行山杖・護膝", `此路線難度${selectedCamp.diff},上落斜幅度大`]);
+        if (nearestWaterText())
+            items.push(["自攜水樽・沿途補水", nearestWaterText() + "（環保署開放數據・減少購買樽裝水）"]);
         items.push(["手機充飽電＋行動電源", "GPS 導航、SOS 求救及回收掃碼都需要電量"]);
         if (rainy) {
             items.push(["雨具・防水袋", `天文台預測:${f.forecastWeather}`]);
@@ -1227,6 +1279,29 @@
         const entries = JSON.parse(localStorage.getItem('diary') || "[]").filter(p => p.time !== time);
         localStorage.setItem('diary', JSON.stringify(entries));
         renderDiary();
+    }
+
+    // ============ 覆核結果同步：管理員在 Sheet 填「屬實／虛假」→ App 自動加減信用值 ============
+    function syncModeration(remote) {
+        const applied = JSON.parse(localStorage.getItem('modApplied') || "[]");
+        let delta = 0, msgs = [];
+        remote.forEach(r => {
+            if (r.deviceId !== deviceId || !r.review || applied.includes(r.time)) return;
+            const d = /虛假|虚假|false|reject/i.test(r.review) ? -30 : /屬實|属实|true|approve|ok/i.test(r.review) ? 5 : 0;
+            if (d === 0) return;
+            delta += d;
+            applied.push(r.time);
+            msgs.push(`「${r.type}」覆核結果：${r.review}（${d > 0 ? "+" : ""}${d} 信用值）`);
+        });
+        if (delta !== 0) {
+            userCredit = Math.max(0, Math.min(200, userCredit + delta));
+            localStorage.setItem('credit', userCredit);
+            localStorage.setItem('modApplied', JSON.stringify(applied));
+            renderCredit();
+            showCustomAlert(`📋 管理員覆核結果已同步：\n\n${msgs.join("\n")}\n\n現時信用值：${userCredit}${userCredit <= 0 ? "\n\n信用值已歸零，舉報權限暫停。" : ""}`);
+        } else if (applied.length) {
+            localStorage.setItem('modApplied', JSON.stringify(applied));
+        }
     }
 
     // ============ 任務完成標記・成就徽章・積分兌換 ============
@@ -1443,7 +1518,10 @@
         showCustomAlert("SOS 已觸發！（概念演示）\n\n系統已獲取您當前座標並發送求救信號。請留在原地等待救援。");
     }
     // ============ 眾包舉報系統（真實寫入 + AI 辨識） ============
-    let currentReportType = "垃圾桶滿溢回報", lastAiResult = "", reportLayer = null;
+    let currentReportType = "垃圾桶滿溢回報", lastAiResult = "", reportLayer = null, lastReportPhoto = null;
+    // 匿名裝置編號:純隨機生成,不含任何個人資料,用於覆核結果同步
+    let deviceId = localStorage.getItem('deviceId');
+    if (!deviceId) { deviceId = 'DEV-' + Math.random().toString(36).slice(2, 8).toUpperCase(); localStorage.setItem('deviceId', deviceId); }
 
     function setReportType(type, el) {
         currentReportType = type;
@@ -1459,11 +1537,27 @@
         });
     }
 
+    // 相片縮至 480px JPEG（約 40KB）,供預覽、AI 辨識及上傳覆核用
+    function fileToDataUrl(file, maxW = 480, q = 0.7) {
+        return new Promise(resolve => {
+            const im = new Image();
+            im.onload = () => {
+                const c = document.createElement('canvas');
+                const s = Math.min(1, maxW / im.width);
+                c.width = im.width * s; c.height = im.height * s;
+                c.getContext('2d').drawImage(im, 0, 0, c.width, c.height);
+                resolve(c.toDataURL('image/jpeg', q));
+            };
+            im.src = URL.createObjectURL(file);
+        });
+    }
+
     async function handleReportPhoto(input) {
         const file = input.files[0];
         if (!file) return;
         const img = document.getElementById('photo-preview');
-        img.src = URL.createObjectURL(file);
+        lastReportPhoto = await fileToDataUrl(file);
+        img.src = lastReportPhoto;
         img.style.display = "block";
         document.getElementById('submit-report-btn').style.display = "block";
         const aiBox = document.getElementById('ai-result');
@@ -1563,11 +1657,13 @@
             lng: userLatLng ? userLatLng[1] : selectedCamp.lng,
             note: userLatLng ? "GPS 實地定位" : `示範定位：${selectedCamp.tc}`,
             ai: lastAiResult,
+            deviceId: deviceId,
+            photo: lastReportPhoto,   // 上傳縮圖供管理員覆核（Drive 存檔）
             time: new Date().toISOString()
         };
-        // 1) 本機記錄（永遠執行，離線亦可）
+        // 1) 本機記錄（永遠執行，離線亦可；不存相片以免迫爆本機空間）
         const local = JSON.parse(localStorage.getItem('reports') || "[]");
-        local.push(report);
+        local.push({ ...report, photo: null });
         localStorage.setItem('reports', JSON.stringify(local));
         // 2) 真實後端（設定 BACKEND_URL 後寫入 Google Sheet）
         let backendMsg = "（本機記錄；設定後端後將同步至 Google Sheet）";
@@ -1583,7 +1679,8 @@
         document.getElementById('ai-result').style.display = "none";
         document.getElementById('submit-report-btn').style.display = "none";
         document.getElementById('report-photo').value = "";
-        showCustomAlert(`✅ 回報已提交：「${currentReportType}」\n${lastAiResult ? "AI 判斷：" + lastAiResult + "\n" : ""}位置：${report.lat.toFixed(5)}, ${report.lng.toFixed(5)}\n${backendMsg}\n\n累積的眾包數據將以開放格式回饋政府部門。`);
+        lastReportPhoto = null;
+        showCustomAlert(`✅ 回報已提交：「${currentReportType}」\n${lastAiResult ? "AI 判斷：" + lastAiResult + "\n" : ""}位置：${report.lat.toFixed(5)}, ${report.lng.toFixed(5)}\n${backendMsg}\n\n相片已一併上傳供管理員覆核（匿名裝置編號：${deviceId}）;覆核結果將自動同步至你的信用值。`);
     }
 
     async function drawReports() {
@@ -1595,7 +1692,7 @@
             try {
                 const res = await fetch(CONFIG.BACKEND_URL);
                 const remote = await res.json();
-                if (Array.isArray(remote)) all = all.concat(remote);
+                if (Array.isArray(remote)) { all = all.concat(remote); syncModeration(remote); }
             } catch (e) { /* GET 或會受 CORS 限制，僅顯示本機 */ }
         }
         allReportsCache = all;
@@ -1665,6 +1762,7 @@
     renderCredit();
     renderBadges();
     renderRedeem();
+    document.getElementById('device-id-label').innerText = deviceId;
     if (CONFIG.BACKEND_URL) document.getElementById('report-mode-tag').innerText = "雲端同步";
     if (CONFIG.TM_MODEL_URL) document.getElementById('ai-model-hint').innerText = "AI 滿溢辨識：已啟用";
     setInterval(fetchWeather, 30 * 60 * 1000); // 每 30 分鐘更新天氣
