@@ -159,8 +159,8 @@
         <div class="demo-controller-title"><i class="fa-solid fa-play"></i> 使用者黃金旅程 演示步驟</div>
         <div class="demo-steps">
             <button class="demo-step-btn active" onclick="simulateStep(1, this)"><i class="fa-solid fa-cloud-sun"></i><span>1.出發前</span></button>
-            <button class="demo-step-btn" onclick="simulateStep(2, this)"><i class="fa-solid fa-campground"></i><span>2.揀營地</span></button>
-            <button class="demo-step-btn" onclick="simulateStep(3, this)"><i class="fa-solid fa-camera"></i><span>3.營地中</span></button>
+            <button class="demo-step-btn" onclick="simulateStep(2, this)"><i class="fa-solid fa-map-pin"></i><span>2.揀目的地</span></button>
+            <button class="demo-step-btn" onclick="simulateStep(3, this)"><i class="fa-solid fa-camera"></i><span>3.活動中</span></button>
             <button class="demo-step-btn" onclick="simulateStep(4, this)"><i class="fa-solid fa-route"></i><span>4.下山時</span></button>
             <button class="demo-step-btn" onclick="simulateStep(5, this)"><i class="fa-solid fa-house-chimney-user"></i><span>5.回家後</span></button>
         </div>
@@ -180,7 +180,7 @@
                 <div id="real-map"></div>
 
                 <div class="trail-selector-container">
-                    <span class="trail-selector-label"><i class="fa-solid fa-campground"></i> 選擇營地：</span>
+                    <span class="trail-selector-label"><i class="fa-solid fa-map-pin"></i> 目的地：</span>
                     <select class="trail-select" id="camp-selector" onchange="selectCampsite(this.value)"></select>
                 </div>
 
@@ -243,7 +243,7 @@
                 <div class="grid-container">
                     <div class="card action-card" id="rt-feed" onclick="setReportType('非法餵飼野生動物', this)"><div class="icon-circle icon-red"><i class="fa-solid fa-ban"></i></div><span class="action-title">非法餵飼舉報</span></div>
                     <div class="card action-card" id="rt-eco" onclick="setReportType('野生動植物生態記錄', this)"><div class="icon-circle icon-green"><i class="fa-solid fa-frog"></i></div><span class="action-title">物種生態記錄</span></div>
-                    <div class="card action-card" id="rt-bin" style="grid-column: span 2; border:2px solid #10b981;" onclick="setReportType('營地/燒烤場垃圾桶滿溢', this)"><div class="icon-circle icon-yellow"><i class="fa-solid fa-trash-can"></i></div><span class="action-title">營地垃圾滿溢回報（已選擇）</span></div>
+                    <div class="card action-card" id="rt-bin" style="grid-column: span 2; border:2px solid #10b981;" onclick="setReportType('垃圾桶滿溢回報', this)"><div class="icon-circle icon-yellow"><i class="fa-solid fa-trash-can"></i></div><span class="action-title">垃圾桶滿溢回報：行山徑・營地・燒烤場（已選擇）</span></div>
                 </div>
                 <div class="card">
                     <label class="upload-area" for="report-photo" style="margin-bottom:0;">
@@ -326,7 +326,19 @@
                         <div class="task-info-wrap"><div class="task-icon icon-green"><i class="fa-solid fa-recycle"></i></div><div><div class="task-name">垃圾帶落山・順手回收</div><div class="task-desc" id="task-recycle-desc">請順路至市區回收點投遞</div></div></div>
                         <button class="btn-claim" id="claim-recycle-btn" onclick="claimTask('recycle', 200)">領取 +200</button>
                     </div>
+                    <div class="task-item">
+                        <div class="task-info-wrap"><div class="task-icon icon-yellow" style="background:#fef3c7; color:#ca8a04;"><i class="fa-solid fa-camera"></i></div><div><div class="task-name">郊野守護者・眾包回報</div><div class="task-desc" id="task-report-desc">提交滿溢／生態回報一次</div></div></div>
+                        <button class="btn-claim" id="claim-report-btn" onclick="claimTask('report', 50)">領取 +50</button>
+                    </div>
+                    <div class="task-item">
+                        <div class="task-info-wrap"><div class="task-icon icon-blue"><i class="fa-solid fa-comments"></i></div><div><div class="task-name">山友社區・分享見聞</div><div class="task-desc" id="task-share-desc">在論壇發帖分享一次</div></div></div>
+                        <button class="btn-claim" id="claim-share-btn" onclick="claimTask('share', 20)">領取 +20</button>
+                    </div>
                 </div>
+                <div class="section-title"><i class="fa-solid fa-medal"></i> 我的成就</div>
+                <div class="stats-grid" style="display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin-bottom:16px;" id="badge-row"></div>
+                <div class="section-title"><i class="fa-solid fa-gift"></i> 積分兌換（合作商戶・概念演示）</div>
+                <div id="redeem-list"></div>
             </div>
 
             <!-- 模組 4: 數據來源（本作品開放數據清單） -->
@@ -358,6 +370,16 @@
                         <div class="ds-dot dot-wait"></div>
                         <div><div class="ds-name">公眾假期數據 API</div>
                         <div class="ds-meta" id="ds-hol-meta">1823.gov.hk/common/ical/tc.json</div><span class="ds-provider">效率促進組 1823</span></div>
+                    </div>
+                    <div class="ds-item" id="ds-trail">
+                        <div class="ds-dot dot-wait"></div>
+                        <div><div class="ds-name">郊野公園行山徑（線狀數據）</div>
+                        <div class="ds-meta" id="ds-trail-meta">CSDI WFS・地圖放大後即時載入徑線</div><span class="ds-provider">漁農自然護理署</span></div>
+                    </div>
+                    <div class="ds-item" id="ds-shelter">
+                        <div class="ds-dot dot-wait"></div>
+                        <div><div class="ds-name">郊野公園避雨亭位置</div>
+                        <div class="ds-meta" id="ds-shelter-meta">CSDI WFS・按目的地 5 公里範圍即時載入,配合雷暴警告顯示最近避雨點</div><span class="ds-provider">漁農自然護理署</span></div>
                     </div>
                     <div class="ds-item" id="ds-kmb">
                         <div class="ds-dot dot-wait"></div>
@@ -479,6 +501,51 @@
     ];
 
     // =====================================================================
+    // 1b. 郊野公園（24 個）主要入口／遊客中心一帶代表座標
+    //     公園名單來自漁護署;座標為主要入口示意位置,方便導航及規劃
+    // =====================================================================
+    const COUNTRY_PARKS = [
+        {tc:"城門郊野公園",lat:22.3922,lng:114.1482},{tc:"金山郊野公園",lat:22.3535,lng:114.1480},
+        {tc:"獅子山郊野公園",lat:22.3520,lng:114.1800},{tc:"香港仔郊野公園",lat:22.2530,lng:114.1610},
+        {tc:"大潭郊野公園",lat:22.2520,lng:114.1980},{tc:"西貢東郊野公園",lat:22.4010,lng:114.3230},
+        {tc:"西貢西郊野公園",lat:22.4066,lng:114.3252},{tc:"船灣郊野公園",lat:22.4680,lng:114.2380},
+        {tc:"南大嶼郊野公園",lat:22.2533,lng:113.9862},{tc:"北大嶼郊野公園",lat:22.2680,lng:113.9250},
+        {tc:"八仙嶺郊野公園",lat:22.4915,lng:114.1670},{tc:"大欖郊野公園",lat:22.4068,lng:114.1032},
+        {tc:"大帽山郊野公園",lat:22.4051,lng:114.1051},{tc:"林村郊野公園",lat:22.4510,lng:114.1170},
+        {tc:"馬鞍山郊野公園",lat:22.4027,lng:114.2752},{tc:"橋咀郊野公園",lat:22.3590,lng:114.3050},
+        {tc:"清水灣郊野公園",lat:22.2890,lng:114.2880},{tc:"石澳郊野公園",lat:22.2430,lng:114.2350},
+        {tc:"薄扶林郊野公園",lat:22.2670,lng:114.1400},{tc:"龍虎山郊野公園",lat:22.2760,lng:114.1350}
+    ];
+
+    // =====================================================================
+    // 1c. 熱門行山徑（起點座標・長度・難度,整理自漁護署「郊野樂行」資料）
+    // =====================================================================
+    const FAMOUS_TRAILS = [
+        {tc:"麥理浩徑第一段（北潭涌起）",park:"西貢東郊野公園",len:"10.6 公里",diff:"中",lat:22.4010,lng:114.3230},
+        {tc:"龍脊（土地灣起）",park:"石澳郊野公園",len:"8.5 公里",diff:"低至中",lat:22.2460,lng:114.2420},
+        {tc:"大帽山（荃錦坳起）",park:"大帽山郊野公園",len:"約 9 公里",diff:"中高",lat:22.4051,lng:114.1051},
+        {tc:"大東山（伯公坳起）",park:"南大嶼郊野公園",len:"約 6 公里",diff:"高",lat:22.2570,lng:113.9550},
+        {tc:"針山・草山（城門起）",park:"城門郊野公園",len:"約 9 公里",diff:"高",lat:22.3922,lng:114.1482},
+        {tc:"獅子山（樂富起）",park:"獅子山郊野公園",len:"約 5 公里",diff:"高",lat:22.3520,lng:114.1800},
+        {tc:"流水響郊遊徑",park:"八仙嶺郊野公園",len:"約 4.4 公里",diff:"低",lat:22.4914,lng:114.1671},
+        {tc:"衛奕信徑第九・十段（八仙嶺）",park:"八仙嶺郊野公園",len:"約 22 公里",diff:"高",lat:22.4915,lng:114.1670},
+        {tc:"金山家樂徑（猴子山）",park:"金山郊野公園",len:"約 1.5 公里",diff:"低",lat:22.3535,lng:114.1480},
+        {tc:"港島徑第八段龍脊段前・大潭",park:"大潭郊野公園",len:"約 7 公里",diff:"中",lat:22.2520,lng:114.1980}
+    ];
+
+    // ============ 統一目的地模型:郊野公園 + 行山徑 + 營地 ============
+    const DESTINATIONS = [
+        ...COUNTRY_PARKS.map(p => ({ ...p, park: p.tc, kind: 'park' })),
+        ...FAMOUS_TRAILS.map(t => ({ ...t, kind: 'trail' })),
+        ...AFCD_CAMPSITES.map(c => ({ ...c, kind: 'camp' }))
+    ];
+    const KIND_META = {
+        park:  { icon: 'fa-tree',          color: '#059669', label: '郊野公園' },
+        trail: { icon: 'fa-person-hiking', color: '#2563eb', label: '行山徑' },
+        camp:  { icon: 'fa-campground',    color: '#d97706', label: '營地' }
+    };
+
+    // =====================================================================
     // 2. 真實開放數據：環保署「回收點數據資料」後備快照（節錄）
     //    來源：wastereduction.gov.hk wasteless260708.csv，2026-07 下載
     //    正式版由 CSDI WFS API 即時載入；此快照僅作離線後備
@@ -516,14 +583,24 @@
         "大帽山郊野公園":   { animal: "野豬、流浪牛", tip: "大帽山林道常有牛群阻路，請減速慢行、保持距離。" },
         "大欖郊野公園":     { animal: "野豬、蛇類",   tip: "草叢茂密，請沿主徑行走，防蚊防蛇。" },
         "南大嶼郊野公園":   { animal: "流浪牛、水牛", tip: "貝澳、水口一帶水牛出沒，請保持 5 米距離。" },
-        "北大嶼郊野公園":   { animal: "流浪牛",       tip: "請勿觸摸或餵飼牛隻，垃圾袋要紮緊帶走。" }
+        "北大嶼郊野公園":   { animal: "流浪牛",       tip: "請勿觸摸或餵飼牛隻，垃圾袋要紮緊帶走。" },
+        "金山郊野公園":     { animal: "大量獼猴",     tip: "著名猴子山！嚴禁手持膠袋、當眾進食及餵飼。" },
+        "獅子山郊野公園":   { animal: "獼猴",         tip: "沿途有猴群出沒，食物及貴重物品收入背包。" },
+        "香港仔郊野公園":   { animal: "野豬、箭豬",   tip: "黃昏後箭豬活躍，請留意腳下，勿餵飼野豬。" },
+        "大潭郊野公園":     { animal: "野豬",         tip: "水塘一帶野豬覓食，垃圾請入桶或帶走。" },
+        "清水灣郊野公園":   { animal: "流浪牛",       tip: "大坳門風箏場常有牛群，請勿餵飼。" },
+        "石澳郊野公園":     { animal: "牛隻、蛇類",   tip: "草叢茂密路段請沿主徑行走。" },
+        "薄扶林郊野公園":   { animal: "野豬",         tip: "黃昏時分野豬活躍，保持距離切勿餵飼。" },
+        "龍虎山郊野公園":   { animal: "野豬",         tip: "夜行人士請帶備電筒，留意野豬出沒。" },
+        "林村郊野公園":     { animal: "野豬、雀鳥",   tip: "生態豐富，請勿遺留任何食物殘渣。" },
+        "橋咀郊野公園":     { animal: "牛隻、海洋生物", tip: "連島沙洲留意潮汐，垃圾必須帶離島嶼。" }
     };
 
     // ============ 全域狀態 ============
     let map, campMarkers = [], rcpLayer = null, wildlifeLayer = null, userMarker = null, userLatLng = null;
     let isRecording = false;
     let liveRecyclingPoints = [];          // WFS 即時載入的回收點
-    let selectedCamp = AFCD_CAMPSITES[0];  // 目前選擇的營地
+    let selectedCamp = DESTINATIONS[0];  // 目前選擇的目的地（公園/行山徑/營地）
     let forecastData = null, holidaySet = new Set();
     let points = 2850, isNavigating = false;
 
@@ -568,8 +645,13 @@
 
         rcpLayer = L.layerGroup().addTo(map);
         wildlifeLayer = L.layerGroup().addTo(map);
+        trailLayer = L.layerGroup().addTo(map);
+        shelterLayer = L.layerGroup().addTo(map);
         drawCampsites();
         drawWildlifeHotspot();
+        map.on('moveend', debounceFetchTrails);
+        fetchTrails();
+        fetchSheltersAround();
         setDot('ds-camp', 'ok');
         document.getElementById('ds-camp-meta').innerText = `data.gov.hk：hk-afcd-afcdlist-campsite（已載入 ${AFCD_CAMPSITES.length} 個營地）`;
 
@@ -578,36 +660,48 @@
         startLocationTracking();
     }
 
-    function campIcon(c) {
+    function destIcon(d) {
+        const meta = KIND_META[d.kind];
         return L.divIcon({ className: 'custom-leaflet-icon',
-            html: `<div class="camp-marker"><i class="fa-solid fa-campground"></i></div><div class="camp-marker-label">${c.tc}</div>`,
-            iconSize: [70, 40], iconAnchor: [35, 36] });
+            html: `<div class="camp-marker" style="color:${meta.color}"><i class="fa-solid ${meta.icon}"></i></div><div class="camp-marker-label">${d.tc}</div>`,
+            iconSize: [86, 40], iconAnchor: [43, 36] });
+    }
+    function destPopup(d) {
+        if (d.kind === 'camp')
+            return `<b>${d.tc}</b>（營地）<br>${d.park}<br>水源：${d.water}｜營位：${d.tents}<br><span style="font-size:10px;color:#64748b">來源：漁護署開放數據</span>`;
+        if (d.kind === 'trail')
+            return `<b>${d.tc}</b>（行山徑）<br>${d.park}<br>長度：${d.len}｜難度：${d.diff}<br><span style="font-size:10px;color:#64748b">整理自漁護署「郊野樂行」資料（起點示意）</span>`;
+        return `<b>${d.tc}</b>（郊野公園）<br><span style="font-size:10px;color:#64748b">主要入口一帶代表位置（示意）・公園名單來自漁護署</span>`;
     }
     function drawCampsites() {
-        AFCD_CAMPSITES.forEach(c => {
-            const m = L.marker([c.lat, c.lng], { icon: campIcon(c) }).addTo(map);
-            m.bindPopup(`<b>${c.tc}</b><br>${c.park}<br>水源：${c.water}｜營位：${c.tents}<br><span style="font-size:10px;color:#64748b">來源：漁護署開放數據</span>`);
+        DESTINATIONS.forEach(d => {
+            const m = L.marker([d.lat, d.lng], { icon: destIcon(d) }).addTo(map);
+            m.bindPopup(destPopup(d));
             campMarkers.push(m);
         });
-        // 填充選單（按郊野公園分組）
+        // 填充選單:郊野公園 → 行山徑 → 營地(按公園分組)
         const sel = document.getElementById('camp-selector');
-        const parks = [...new Set(AFCD_CAMPSITES.map(c => c.park))];
-        parks.forEach(p => {
-            const og = document.createElement('optgroup'); og.label = p;
-            AFCD_CAMPSITES.forEach((c, i) => {
-                if (c.park === p) { const o = document.createElement('option'); o.value = i; o.textContent = c.tc; og.appendChild(o); }
+        const addGroup = (label, filter) => {
+            const og = document.createElement('optgroup'); og.label = label;
+            DESTINATIONS.forEach((d, i) => {
+                if (filter(d)) { const o = document.createElement('option'); o.value = i; o.textContent = d.tc; og.appendChild(o); }
             });
-            sel.appendChild(og);
-        });
+            if (og.children.length) sel.appendChild(og);
+        };
+        addGroup("🌳 郊野公園（主要入口）", d => d.kind === 'park');
+        addGroup("🥾 熱門行山徑（起點）", d => d.kind === 'trail');
+        [...new Set(AFCD_CAMPSITES.map(c => c.park))].forEach(pk =>
+            addGroup("⛺ 營地・" + pk, d => d.kind === 'camp' && d.park === pk));
     }
 
     function selectCampsite(idx) {
-        selectedCamp = AFCD_CAMPSITES[idx];
+        selectedCamp = DESTINATIONS[idx];
         map.flyTo([selectedCamp.lat, selectedCamp.lng], 14, { duration: 1 });
         drawWildlifeHotspot();
         updateAiCard();
         generatePlan();
         updateHeaderTemp();
+        fetchSheltersAround();
     }
 
     // ============ 動物出沒熱點 ============
@@ -816,6 +910,73 @@
             (score >= 70 ? "建議自備垃圾袋，下山順路回收可獲雙倍積分！" : "祝旅途愉快，記得垃圾帶落山。") + `</span>`;
     }
 
+    // ============ 行山徑圖層（漁護署「郊野公園行山徑」WFS・線狀數據） ============
+    let trailLayer = null, trailTimer = null;
+    const TRAIL_WFS = "https://portal.csdi.gov.hk/server/services/common/afcd_rcd_1665568199103_4360/MapServer/WFSServer";
+    function debounceFetchTrails() { clearTimeout(trailTimer); trailTimer = setTimeout(fetchTrails, 800); }
+    async function fetchTrails() {
+        if (!trailLayer) return;
+        if (map.getZoom() < 13) { trailLayer.clearLayers(); return; } // 避免一次過載入全港徑線
+        const b = map.getBounds();
+        const q = bbox => fetch(`${TRAIL_WFS}?service=WFS&version=2.0.0&request=GetFeature&typeNames=csdi:HikingTrails_HikingTrails_Ext_GDB&outputFormat=GEOJSON&count=15&srsName=urn:ogc:def:crs:EPSG::4326&bbox=${bbox}`)
+            .then(r => { if (!r.ok) throw new Error(r.status); return r.json(); });
+        try {
+            let gj = await q(`${b.getSouth()},${b.getWest()},${b.getNorth()},${b.getEast()},urn:ogc:def:crs:EPSG::4326`);
+            if (!gj.features || !gj.features.length)
+                gj = await q(`${b.getWest()},${b.getSouth()},${b.getEast()},${b.getNorth()},urn:ogc:def:crs:EPSG::4326`);
+            trailLayer.clearLayers();
+            (gj.features || []).forEach(f => {
+                L.geoJSON(f, { style: { color: "#8b5a2b", weight: 3, opacity: 0.75, dashArray: "1 7" } })
+                 .bindPopup(`<b>郊野公園行山徑</b><br><span style="font-size:10px;color:#64748b">來源：漁護署「郊野公園行山徑」開放數據（CSDI WFS）</span>`)
+                 .addTo(trailLayer);
+            });
+            setDot('ds-trail', 'ok');
+            document.getElementById('ds-trail-meta').innerText = `CSDI WFS・目前範圍已載入 ${gj.features ? gj.features.length : 0} 段徑線（地圖放大至 13 級以上顯示）`;
+        } catch (e) {
+            setDot('ds-trail', 'fail');
+            document.getElementById('ds-trail-meta').innerText = "行山徑 API 暫不可用（不影響其他功能）";
+        }
+    }
+
+    // ============ 避雨亭圖層（漁護署「郊野公園的涼亭」・CSDI WFS） ============
+    let shelterLayer = null, destShelters = [];
+    const SHELTER_WFS = "https://portal.csdi.gov.hk/server/services/common/afcd_rcd_1635142884970_61353/MapServer/WFSServer";
+    async function fetchSheltersAround() {
+        if (!shelterLayer) return;
+        const d = 0.045; // 約 5 公里範圍
+        const q = bbox => fetch(`${SHELTER_WFS}?service=WFS&version=2.0.0&request=GetFeature&typeNames=csdi:geotagging&outputFormat=GEOJSON&count=60&bbox=${bbox}`)
+            .then(r => { if (!r.ok) throw new Error(r.status); return r.json(); });
+        try {
+            let gj = await q(`${selectedCamp.lat-d},${selectedCamp.lng-d},${selectedCamp.lat+d},${selectedCamp.lng+d},urn:ogc:def:crs:EPSG::4326`);
+            if (!gj.features || !gj.features.length)
+                gj = await q(`${selectedCamp.lng-d},${selectedCamp.lat-d},${selectedCamp.lng+d},${selectedCamp.lat+d},urn:ogc:def:crs:EPSG::4326`);
+            destShelters = (gj.features || []).map(f => ({
+                name: f.properties.Name_of_Building_Facility_TC || f.properties.address_tc || f.properties.Name_of_Building_Facility || "避雨亭",
+                lat: f.geometry.coordinates[1], lng: f.geometry.coordinates[0]
+            }));
+            shelterLayer.clearLayers();
+            destShelters.forEach(p => {
+                const icon = L.divIcon({ className: 'custom-leaflet-icon',
+                    html: `<div class="recycle-marker" style="color:#0284c7"><i class="fa-solid fa-umbrella"></i></div>`,
+                    iconSize: [30, 30], iconAnchor: [15, 26] });
+                L.marker([p.lat, p.lng], { icon }).addTo(shelterLayer)
+                 .bindPopup(`<b>${p.name}</b>（避雨亭）<br><span style="font-size:10px;color:#64748b">來源：漁護署「郊野公園的涼亭」開放數據</span>`);
+            });
+            setDot('ds-shelter', 'ok');
+            document.getElementById('ds-shelter-meta').innerText = `CSDI WFS・目的地 5 公里內 ${destShelters.length} 個避雨亭（即時）`;
+        } catch (e) {
+            destShelters = [];
+            setDot('ds-shelter', 'fail');
+        }
+        generatePlan();
+    }
+    function nearestShelterText() {
+        if (!destShelters.length) return "";
+        const s = destShelters.map(p => ({ ...p, dist: haversine(selectedCamp.lat, selectedCamp.lng, p.lat, p.lng) }))
+            .sort((a, b) => a.dist - b.dist)[0];
+        return `最近避雨亭：${s.name}（約 ${s.dist.toFixed(1)} 公里）`;
+    }
+
     // ============ 天文台實時氣溫（rhrread API・27 個自動氣象站） ============
     // 氣象站座標（整理自天文台站網資料），用作「就近氣象站」配對
     const HKO_STATIONS = {
@@ -898,7 +1059,14 @@
         // ---- 智能裝備清單（規則式 AI・每項附原因） ----
         const items = [];
         items.push(["垃圾袋 × 2", "自備垃圾袋,垃圾帶落山（本 App 核心任務,回收可賺積分）"]);
-        items.push(["足夠食水", selectedCamp.water.includes("溪水") ? `${selectedCamp.tc}只有季節性溪水,必須自攜足夠食水` : "營地有" + selectedCamp.water + ",仍建議帶備用"]);
+        if (selectedCamp.kind === 'camp')
+            items.push(["足夠食水", selectedCamp.water.includes("溪水") ? `${selectedCamp.tc}只有季節性溪水,必須自攜足夠食水` : "營地有" + selectedCamp.water + ",仍建議帶備用"]);
+        else if (selectedCamp.kind === 'trail')
+            items.push(["足夠食水(每人至少 1.5 公升)", `${selectedCamp.tc}全長${selectedCamp.len},沿途補給有限`]);
+        else
+            items.push(["足夠食水", "郊野公園內飲水設施有限,建議自攜"]);
+        if (selectedCamp.kind === 'trail' && (selectedCamp.diff || "").includes("高"))
+            items.push(["行山杖・護膝", `此路線難度${selectedCamp.diff},上落斜幅度大`]);
         items.push(["手機充飽電＋行動電源", "GPS 導航、SOS 求救及回收掃碼都需要電量"]);
         if (rainy) {
             items.push(["雨具・防水袋", `天文台預測:${f.forecastWeather}`]);
@@ -919,14 +1087,17 @@
         let tips = [];
         if (t >= 33 && timeSlot === "pm") tips.push(`預測最高氣溫 ${t}°C,建議改為朝早出發,避開正午酷熱時段`);
         if (t >= 33 && timeSlot === "am") tips.push("記得每 30 分鐘補水一次,發現同行者頭暈作嘔要即時休息求助");
-        if (rainy) tips.push("有驟雨或雷暴預測,避免行溪澗路線,雷暴時遠離山頂及大樹");
+        if (rainy) {
+            const sh = nearestShelterText();
+            tips.push("有驟雨或雷暴預測,避免行溪澗路線,雷暴時遠離山頂及大樹" + (sh ? "。" + sh + "（漁護署開放數據）" : ""));
+        }
         if (isHoliday) tips.push("當日是公眾假期,郊野人流高峰,垃圾請務必帶落山,下山回收點見地圖");
         if (score >= 70) tips.push("此日營地預測「高度繁忙」——垃圾桶較易滿,請自備垃圾袋;完成順路回收可獲雙倍積分!");
 
         // ---- 即時天氣警告（天文台 warnsum API） ----
         let warnHtml = "";
         if (activeWarnings.length) {
-            warnHtml = `<div class="warn-banner"><i class="fa-solid fa-triangle-exclamation"></i> 天文台現正生效警告:${activeWarnings.join("、")}${/酷熱/.test(activeWarnings.join()) ? "——酷熱警告下請縮短行程、加倍補水" : ""}${/(雷暴|暴雨|颱風|風球)/.test(activeWarnings.join()) ? "——惡劣天氣,強烈建議改期!" : ""}</div>`;
+            warnHtml = `<div class="warn-banner"><i class="fa-solid fa-triangle-exclamation"></i> 天文台現正生效警告:${activeWarnings.join("、")}${/酷熱/.test(activeWarnings.join()) ? "——酷熱警告下請縮短行程、加倍補水" : ""}${/(雷暴|暴雨|颱風|風球)/.test(activeWarnings.join()) ? "——惡劣天氣,強烈建議改期!" + (nearestShelterText() ? "如已在山上," + nearestShelterText() : "") : ""}</div>`;
         }
 
         out.innerHTML = `
@@ -1006,6 +1177,7 @@
         document.getElementById('forum-preview').style.display = 'none';
         delete pendingPhotos['forum-preview'];
         renderForum();
+        markTaskReady('share', 20);
         showCustomAlert("✅ 已發帖!\n\n帖子已同步至雲端（相片僅存於本機,正式版將上傳雲端儲存）。");
     }
     function renderForum() {
@@ -1055,6 +1227,45 @@
         const entries = JSON.parse(localStorage.getItem('diary') || "[]").filter(p => p.time !== time);
         localStorage.setItem('diary', JSON.stringify(entries));
         renderDiary();
+    }
+
+    // ============ 任務完成標記・成就徽章・積分兌換 ============
+    function markTaskReady(id, reward) {
+        const btn = document.getElementById(`claim-${id}-btn`);
+        if (btn && !btn.classList.contains('claimed')) {
+            btn.innerText = `點擊領取 +${reward}`;
+            const desc = document.getElementById(`task-${id}-desc`);
+            if (desc) desc.innerText = "已完成！";
+        }
+    }
+    function renderBadges() {
+        const tiers = [
+            ["綠芽", 0, "fa-seedling"], ["山友", 3000, "fa-person-hiking"], ["郊野守護者", 5000, "fa-shield-heart"]
+        ];
+        document.getElementById('badge-row').innerHTML = tiers.map(([n, th, ic]) => {
+            const on = points >= th;
+            return `<div class="stat-card" style="background:${on ? '#ecfdf5' : 'white'}; padding:10px 4px; border-radius:12px; text-align:center; border:1px solid ${on ? '#6ee7b7' : '#e2e8f0'};">
+                <div style="font-size:1.2rem; color:${on ? '#059669' : '#cbd5e1'};"><i class="fa-solid ${ic}"></i></div>
+                <div style="font-size:0.7rem; font-weight:bold; color:${on ? '#065f46' : '#94a3b8'};">${n}</div>
+                <div style="font-size:0.58rem; color:#94a3b8;">${th.toLocaleString()} 分${on ? "・已達成" : ""}</div></div>`;
+        }).join("");
+    }
+    function renderRedeem() {
+        document.getElementById('redeem-list').innerHTML = SHOP_PARTNERS.map((s, i) => {
+            const cost = parseInt(s.offer) || 100;
+            return `<div class="task-item"><div class="task-info-wrap"><div class="task-icon" style="background:#fffbeb; color:#b45309;"><i class="fa-solid fa-store"></i></div>
+                <div><div class="task-name">${s.name}</div><div class="task-desc">${s.offer}</div></div></div>
+                <button class="btn-claim" onclick="redeem(${i})">${cost} 分兌換</button></div>`;
+        }).join("");
+    }
+    function redeem(i) {
+        const s = SHOP_PARTNERS[i];
+        const cost = parseInt(s.offer) || 100;
+        if (points < cost) { showCustomAlert(`積分不足（需要 ${cost} 分,現有 ${points} 分）。\n\n完成回收和眾包任務賺取更多綠色積分!`); return; }
+        points -= cost;
+        document.getElementById('user-points').innerText = points;
+        renderBadges();
+        showCustomAlert(`🎁 兌換成功!\n\n${s.name}:${s.offer}\n（概念演示:正式版將產生兌換 QR 碼予商戶核銷。積分消費同時為山村商戶帶來客流。）`);
     }
 
     // ============ 舉報信用值（防濫用機制） ============
@@ -1205,14 +1416,14 @@
             showCustomAlert("步驟 1: 出發前\n\nAI 行程規劃:揀日子,系統即時結合天文台九天預報、天氣警告、1823 假期及漁護署營地資料,自動生成當日的營地繁忙預測、貼心建議及裝備清單(每項都寫明原因)。繁忙度高即人多、垃圾桶易滿——建議自備垃圾袋。");
         } else if (step === 2) {
             switchTab('map', document.getElementById('nav-map-btn'));
-            const idx = AFCD_CAMPSITES.findIndex(c => c.en === "Hok Tau");
+            const idx = DESTINATIONS.findIndex(c => c.en === "Hok Tau");
             document.getElementById('camp-selector').value = idx;
             selectCampsite(idx);
-            showCustomAlert("步驟 2: 揀選營地\n\n地圖上 41 個營地全部來自漁護署開放數據（真實座標、水源、營位數）。示範選擇：鶴藪營地。\n\n紅色三角標記為動物出沒熱點——行進中若偏離主徑並接近熱點，App 會發出雙重警報（3 秒後示範）。");
+            showCustomAlert("步驟 2: 揀選目的地\n\n行山、露營、郊遊三類需求一次滿足：24 個郊野公園（主要入口）、熱門行山徑（起點＋長度難度）、41 個漁護署營地——全部真實數據；放大地圖更會即時載入漁護署行山徑徑線。\n\n示範選擇：鶴藪營地。紅色三角為動物出沒熱點——偏離主徑並接近熱點時，App 會發出雙重警報（3 秒後示範）。");
             setTimeout(simulateDoubleAlert, 3000);
         } else if (step === 3) {
             switchTab('report', document.getElementById('nav-report-btn'));
-            showCustomAlert("步驟 3: 營地中\n\n發現垃圾桶滿溢？用「郊野守護者」拍照回報（附 GPS 水印）。眾包數據將以開放格式回饋政府部門。");
+            showCustomAlert("步驟 3: 活動中（行山／露營／郊遊）\n\n無論在行山徑、營地定燒烤場，發現垃圾桶滿溢、非法餵飼或想記錄生態，都可用「郊野守護者」拍照回報（附 GPS 水印）。眾包數據將以開放格式回饋政府部門。");
         } else if (step === 4) {
             switchTab('map', document.getElementById('nav-map-btn'));
             openRoutingModal();
@@ -1232,7 +1443,7 @@
         showCustomAlert("SOS 已觸發！（概念演示）\n\n系統已獲取您當前座標並發送求救信號。請留在原地等待救援。");
     }
     // ============ 眾包舉報系統（真實寫入 + AI 辨識） ============
-    let currentReportType = "營地/燒烤場垃圾桶滿溢", lastAiResult = "", reportLayer = null;
+    let currentReportType = "垃圾桶滿溢回報", lastAiResult = "", reportLayer = null;
 
     function setReportType(type, el) {
         currentReportType = type;
@@ -1258,8 +1469,64 @@
         const aiBox = document.getElementById('ai-result');
         lastAiResult = "";
 
+        // AI 物種辨識（MobileNet 通用模型・瀏覽器本地運行・初步辨識+人工覆核）
+        if (currentReportType.includes("生態") || currentReportType.includes("餵飼")) {
+            aiBox.style.display = "block";
+            aiBox.innerText = "🤖 AI 辨識物種中⋯⋯（首次需下載模型,約 10 秒）";
+            try {
+                if (!window.tf) await loadScript("https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.10.0/dist/tf.min.js");
+                if (!window.mobilenet) await loadScript("https://cdn.jsdelivr.net/npm/@tensorflow-models/mobilenet@2.1.1/dist/mobilenet.min.js");
+                if (!window.mnModel) window.mnModel = await mobilenet.load({ version: 2, alpha: 1.0 });
+                await new Promise(r => { img.complete ? r() : img.onload = r; });
+                // 取頭 5 個候選，掃描物種庫——正確答案常在第 2 至 5 位
+                const preds = await window.mnModel.classify(img, 5);
+                const SPECIES_TC = [
+                    [/wild boar|\bboar\b|\bhog\b|\bpig\b|warthog/i, "野豬"],
+                    [/macaque|monkey|baboon|gibbon|langur|capuchin/i, "獼猴"],
+                    [/water buffalo|buffalo|\box\b|oxcart|bison|\bbull\b|\bcow\b|cattle|bovine/i, "牛隻"],
+                    [/snake|cobra|mamba|viper|boa|python|adder|rattler/i, "蛇類"],
+                    [/porcupine|hedgehog|echidna/i, "箭豬"],
+                    [/kite|eagle|hawk|vulture|falcon|osprey/i, "猛禽（黑鳶？）"],
+                    [/egret|heron|crane|stork|ibis|spoonbill|flamingo/i, "鷺鳥"],
+                    [/frog|toad|axolotl/i, "蛙類"],
+                    [/lizard|gecko|iguana|agama|chameleon|skink|monitor/i, "蜥蜴"],
+                    [/turtle|terrapin|tortoise/i, "龜"],
+                    [/butterfly|monarch|admiral|swallowtail|lycaenid/i, "蝴蝶"],
+                    [/dragonfly|damselfly/i, "蜻蜓"],
+                    [/\bbee\b|wasp|hornet/i, "蜂類"], [/beetle|weevil|ladybug/i, "甲蟲"],
+                    [/moth\b/i, "蛾類"], [/mantis/i, "螳螂"], [/grasshopper|cricket|cicada/i, "草蜢／蟬"],
+                    [/spider|tarantula/i, "蜘蛛"], [/centipede|millipede/i, "蜈蚣／馬陸"], [/scorpion/i, "蠍子"],
+                    [/crab|crayfish|lobster/i, "蟹類"], [/squirrel|marmot|chipmunk/i, "松鼠"],
+                    [/hare|rabbit|bunny/i, "野兔"], [/\bbat\b|fruit bat|flying fox/i, "蝙蝠"],
+                    [/mongoose|meerkat|weasel|ferret|otter|badger|civet/i, "食蟹獴／果子狸類"],
+                    [/pangolin|armadillo/i, "穿山甲"], [/\bdeer\b|muntjac|gazelle|antelope/i, "赤麂（黃麖）"],
+                    [/owl\b/i, "貓頭鷹"], [/kingfisher/i, "翠鳥"], [/magpie|jay|crow|raven/i, "鴉／鵲"],
+                    [/parrot|cockatoo|parakeet|macaw/i, "鸚鵡"], [/bulbul|robin|finch|sparrow|warbler|thrush/i, "林鳥"],
+                    [/duck|goose|swan|teal|drake/i, "水鳥"], [/cock\b|hen\b|rooster|junglefowl|peacock|pheasant/i, "雉雞類"],
+                    [/\bdog\b|retriever|terrier|shepherd|spaniel|hound|collie|corgi|husky|chihuahua|poodle|pekinese/i, "流浪狗"],
+                    [/\bcat\b|tabby|siamese|persian|kitten/i, "流浪貓"]
+                ];
+                // 按概率順序找第一個能對照的物種
+                let hit = null;
+                for (const p of preds) {
+                    for (const [re, name] of SPECIES_TC) {
+                        if (re.test(p.className)) { hit = { tc: name, conf: (p.probability * 100).toFixed(0) }; break; }
+                    }
+                    if (hit) break;
+                }
+                if (hit) {
+                    lastAiResult = `${hit.tc} (${hit.conf}%)`;
+                    aiBox.innerText = `🤖 AI 初步辨識：${hit.tc}，信心 ${hit.conf}%（本地運算・經人工覆核後回饋漁護署）`;
+                } else {
+                    lastAiResult = `未能確定 (AI: ${preds[0].className})`;
+                    aiBox.innerText = `🤖 AI 未能確定物種，將交由人工辨認。\n影相貼士：盡量近距離、將動物置於畫面中央、避免逆光。`;
+                }
+            } catch (e) {
+                aiBox.innerText = "AI 模型載入失敗，將以人手描述提交。";
+            }
+        }
         // AI 滿溢辨識（Teachable Machine + TensorFlow.js，於瀏覽器本地運行）
-        if (CONFIG.TM_MODEL_URL && currentReportType.includes("滿溢")) {
+        else if (CONFIG.TM_MODEL_URL && currentReportType.includes("滿溢")) {
             aiBox.style.display = "block";
             aiBox.innerText = "🤖 AI 分析照片中⋯⋯";
             try {
@@ -1311,6 +1578,7 @@
             } catch (e) { backendMsg = "網絡問題，已暫存本機，稍後重試。"; }
         }
         drawReports();
+        markTaskReady('report', 50);
         document.getElementById('photo-preview').style.display = "none";
         document.getElementById('ai-result').style.display = "none";
         document.getElementById('submit-report-btn').style.display = "none";
@@ -1378,6 +1646,7 @@
             fill.style.width = Math.min(parseInt(fill.style.width || '70') + 5, 100) + '%';
             btn.classList.add('claimed'); btn.innerText = "已領取";
             btn.style.backgroundColor = "#e2e8f0"; btn.style.color = "#94a3b8";
+            renderBadges();
         } else showCustomAlert("任務尚未達成，請先完成條件！");
     }
 
@@ -1394,6 +1663,8 @@
     renderDiary();
     registerPwa();
     renderCredit();
+    renderBadges();
+    renderRedeem();
     if (CONFIG.BACKEND_URL) document.getElementById('report-mode-tag').innerText = "雲端同步";
     if (CONFIG.TM_MODEL_URL) document.getElementById('ai-model-hint').innerText = "AI 滿溢辨識：已啟用";
     setInterval(fetchWeather, 30 * 60 * 1000); // 每 30 分鐘更新天氣
