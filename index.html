@@ -587,6 +587,28 @@
     ];
 
     // =====================================================================
+    // 2a-2. 智能廚餘回收機位置（示範子集・整理數據）
+    //   依據:環保署廚餘回收計劃——全港所有公共屋邨已設智能廚餘機;
+    //   屋邨名單見房委會開放數據(prh-estates API),此處收錄行山熱點周邊
+    //   約二十條屋邨,座標為屋邨代表位置(示意)。政府暫無廚餘機逐部位置
+    //   的機讀開放數據(僅 PDF 名單),我們已在方案中建議開放。
+    // =====================================================================
+    const FOOD_WASTE_ESTATES = [
+        {n:"梨木樹邨",lat:22.3903,lng:114.1310},{n:"石籬邨",lat:22.3648,lng:114.1330},
+        {n:"瀝源邨",lat:22.3806,lng:114.1903},{n:"禾輋邨",lat:22.3860,lng:114.1946},
+        {n:"美林邨",lat:22.3745,lng:114.1755},{n:"慈正邨",lat:22.3502,lng:114.2050},
+        {n:"竹園北邨",lat:22.3475,lng:114.1965},{n:"恆安邨",lat:22.4183,lng:114.2318},
+        {n:"大元邨",lat:22.4520,lng:114.1690},{n:"富善邨",lat:22.4443,lng:114.1770},
+        {n:"彩園邨",lat:22.5010,lng:114.1265},{n:"祥華邨",lat:22.4920,lng:114.1420},
+        {n:"翠林邨",lat:22.3220,lng:114.2520},{n:"寶林邨",lat:22.3227,lng:114.2577},
+        {n:"山景邨",lat:22.3907,lng:113.9645},{n:"大興邨",lat:22.3937,lng:113.9673},
+        {n:"朗屏邨",lat:22.4482,lng:114.0234},{n:"逸東邨",lat:22.2870,lng:113.9350},
+        {n:"興華邨",lat:22.2670,lng:114.2360},{n:"華富邨",lat:22.2500,lng:114.1370},
+        {n:"田灣邨",lat:22.2480,lng:114.1540}
+    ].map(e => ({ name: e.n + "・智能廚餘回收機", lat: e.lat, lng: e.lng,
+        types: "廚餘 (Food Waste)", legend: "Smart Food Waste Bin（整理數據・屋邨代表位置）" }));
+
+    // =====================================================================
     // 2b. 野生動物出沒資料（按郊野公園）
     //     整理自漁護署野豬滋擾黑點紀錄及立法會 LCQ12 文件；
     //     正式版將由 App 眾包目擊回報持續更新（時間 + GPS + 照片）
@@ -1375,31 +1397,75 @@
     }
 
     // ============ 順路回收規劃（真實回收點 + Haversine） ============
-    function openRoutingModal() {
+    // 按「你帶咗咩落山」分三類推薦：三色回收桶／綠在區區／廚餘回收
+    async function openRoutingModal() {
         document.getElementById('routing-start').innerText = `起點：${selectedCamp.tc}（${selectedCamp.park}）`;
-        // AI 避滿排序：未滿優先，同狀態下距離近者優先
-        const ranked = (liveRecyclingPoints.length ? liveRecyclingPoints : RCP_FALLBACK)
-            .map(p => ({ ...p, dist: haversine(selectedCamp.lat, selectedCamp.lng, p.lat, p.lng), fill: getFillStatus(p) }))
-            .sort((a, b) => a.dist - b.dist);
-        const nearest = ranked[0];
-        const pool = [...ranked].sort((a, b) => (a.fill.full - b.fill.full) || (a.dist - b.dist)).slice(0, 3);
         const box = document.getElementById('rp-options');
-        box.innerHTML = "";
-        // AI 建議：最近點已滿時主動引導改道
-        if (nearest && nearest.fill.full && pool[0] && !pool[0].fill.full) {
-            box.innerHTML = `<div class="tip-banner"><i class="fa-solid fa-robot"></i> <b>AI 建議：</b>距離最近的「${nearest.name}」在 ${nearest.fill.ageH < 1 ? "1 小時內" : Math.round(nearest.fill.ageH) + " 小時前"}被市民回報滿溢，已為你改為推薦「${pool[0].name}」（多行 ${(pool[0].dist - nearest.dist).toFixed(1)} km，完成回收可獲 +50 改道積分）。</div>`;
-        }
-        if (!pool.length) box.innerHTML = "<div style='font-size:0.75rem;color:#64748b'>此範圍暫未有回收點數據，請將地圖移向市區後重試。</div>";
-        pool.forEach(p => {
-            const div = document.createElement('div');
-            div.className = "rp-option";
-            if (p.fill.full) div.style.opacity = "0.55";
-            div.innerHTML = `<div><div class="step-text-main">${p.fill.full ? "⚠ " : ""}${p.name}</div><div class="step-text-sub">${p.types}${p.fill.full ? `・<span style="color:#dc2626; font-weight:bold;">疑似已滿（${p.fill.ageH < 1 ? "1 小時內" : Math.round(p.fill.ageH) + " 小時前"}回報）</span>` : "・<span style='color:#059669;'>暫無滿溢回報</span>"}</div></div><div class="rp-dist">${p.dist.toFixed(1)} km</div>`;
-            div.onclick = () => startNavigation(p);
-            box.appendChild(div);
-        });
+        box.innerHTML = "<div style='font-size:0.75rem;color:#64748b'><i class='fa-solid fa-spinner fa-spin'></i> 正在以目的地為中心搜尋 9 公里內的回收設施⋯⋯</div>";
         document.getElementById('qr-scan-section').style.display = 'none';
         document.getElementById('routing-modal').classList.add('show');
+
+        // 以目的地為中心大範圍搜尋（不受地圖畫面限制），確保三類設施都搵到
+        let pool = [];
+        const d = 0.08;
+        try {
+            let gj = await wfsQuery(`${selectedCamp.lat-d},${selectedCamp.lng-d},${selectedCamp.lat+d},${selectedCamp.lng+d},urn:ogc:def:crs:EPSG::4326`);
+            if (!gj.features || !gj.features.length)
+                gj = await wfsQuery(`${selectedCamp.lng-d},${selectedCamp.lat-d},${selectedCamp.lng+d},${selectedCamp.lat+d},urn:ogc:def:crs:EPSG::4326`);
+            pool = (gj.features || []).map(f => ({
+                name: f.properties.address_tc || f.properties.address_en,
+                lat: f.geometry.coordinates[1], lng: f.geometry.coordinates[0],
+                types: f.properties.waste_type || "", legend: f.properties.legend || ""
+            }));
+        } catch (e) { /* API 不通時用後備快照 */ }
+        if (!pool.length) pool = liveRecyclingPoints.length ? liveRecyclingPoints : RCP_FALLBACK;
+        pool = pool.concat(FOOD_WASTE_ESTATES);   // 智能廚餘機（整理數據）加入候選
+
+        const all = pool.map(p => ({ ...p, dist: haversine(selectedCamp.lat, selectedCamp.lng, p.lat, p.lng), fill: getFillStatus(p) }))
+            .sort((a, b) => a.dist - b.dist);
+        const isGC = p => /GREEN|綠在|環保站|便利點|流動點/i.test((p.legend || "") + (p.name || ""));
+        const isFood = p => /food|廚餘/i.test((p.types || "") + (p.legend || ""));
+        const ageTxt = f => f.ageH < 1 ? "1 小時內" : Math.round(f.ageH) + " 小時前";
+
+        const cats = [
+            { icon: "fa-recycle", color: "#059669", title: "三色回收桶", sub: "膠樽・鋁罐・廢紙", list: all.filter(p => !isGC(p) && !isFood(p)),
+              empty: "9 公里內未有數據，請往市區回收。" },
+            { icon: "fa-house-circle-check", color: "#0d9488", title: "綠在區區", sub: "玻璃樽・小型電器・慳電膽・紙包盒等十多類", list: all.filter(p => isGC(p) && !isFood(p)),
+              empty: "9 公里內未有綠在區區網點。" },
+            { icon: "fa-apple-whole", color: "#b45309", title: "廚餘回收", sub: "智能廚餘機（全港公共屋邨已設・整理數據）", list: all.filter(p => isFood(p) && p.dist <= 15),
+              empty: "15 公里內未有廚餘回收點資料——政府暫無智能廚餘機的機讀位置數據，我們已在方案中建議環保署開放。" }
+        ];
+
+        box.innerHTML = "";
+        cats.forEach(c => {
+            const head = document.createElement('div');
+            head.style.cssText = "font-size:0.72rem; font-weight:bold; color:#475569; margin:10px 0 4px;";
+            head.innerHTML = `<i class="fa-solid ${c.icon}" style="color:${c.color};"></i> ${c.title}<span style="font-weight:normal; color:#94a3b8;">・${c.sub}</span>`;
+            box.appendChild(head);
+            if (!c.list.length) {
+                const em = document.createElement('div');
+                em.style.cssText = "font-size:0.7rem; color:#94a3b8; padding:4px 2px 8px;";
+                em.innerText = c.empty;
+                box.appendChild(em);
+                return;
+            }
+            // 避滿：揀最近而未被回報滿溢的一個；如因此跳過更近的點，顯示 AI 改道說明
+            const nearest = c.list[0];
+            const chosen = c.list.find(p => !p.fill.full) || nearest;
+            if (chosen !== nearest) {
+                const tip = document.createElement('div');
+                tip.className = "tip-banner";
+                tip.style.marginBottom = "6px";
+                tip.innerHTML = `<i class="fa-solid fa-robot"></i> 最近的「${nearest.name}」${ageTxt(nearest.fill)}被回報滿溢，已改為推薦下一個（+50 改道積分）。`;
+                box.appendChild(tip);
+            }
+            const div = document.createElement('div');
+            div.className = "rp-option";
+            if (chosen.fill.full) div.style.opacity = "0.55";
+            div.innerHTML = `<div><div class="step-text-main">${chosen.fill.full ? "⚠ " : ""}${chosen.name}</div><div class="step-text-sub">${chosen.types}${chosen.fill.full ? `・<span style="color:#dc2626; font-weight:bold;">疑似已滿（${ageTxt(chosen.fill)}回報）</span>` : "・<span style='color:#059669;'>暫無滿溢回報</span>"}</div></div><div class="rp-dist">${chosen.dist.toFixed(1)} km</div>`;
+            div.onclick = () => startNavigation(chosen);
+            box.appendChild(div);
+        });
     }
     function closeRoutingModal() {
         document.getElementById('routing-modal').classList.remove('show');
